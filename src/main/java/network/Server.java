@@ -21,7 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-public class Server {
+
+public class
+Server {
 
     private static final int PORT = 22222;
     private static ExecutorService clientTaskPool = Executors.newCachedThreadPool();
@@ -77,11 +79,14 @@ public class Server {
                     case "loginCandidato":
                         loginUser(requestJson, responseNode, responseWriter);
                         break;
-                  case "atualizarCandidato":
+                    case "atualizarCandidato":
                       updateUser(requestJson, responseNode, responseWriter);
                        break;
                     case "visualizarCandidato":
                         viewCandidateProfile(requestJson, responseNode, responseWriter);
+                        break;
+                    case "deletarUsuario":
+                        deleteUser(requestJson, responseNode, responseWriter);
                         break;
                     case "logout":
                         logoutUser(requestJson, responseNode, responseWriter);
@@ -127,6 +132,39 @@ public class Server {
             }
             responseWriter.println(responseNode.toString());
         }
+
+        private void deleteUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+            String userEmail = requestData.get("email").asText();  // Recebe o e-mail diretamente do cliente
+
+            if (userEmail == null || userEmail.isEmpty()) {
+                responseNode.put("status", 400);
+                responseNode.put("mensagem", "E-mail necessário para deletar usuário.");
+                responseWriter.println(responseNode.toString());
+                return;
+            }
+
+            try (Session session = sessionFactory.openSession()) {
+                Pessoa user = (Pessoa) session.createQuery("FROM pessoa WHERE email = :email")
+                        .setParameter("email", userEmail)
+                        .uniqueResult();
+                if (user != null) {
+                    Transaction transaction = session.beginTransaction();
+                    session.delete(user);
+                    transaction.commit();
+                    responseNode.put("status", 200);
+                    responseNode.put("mensagem", "Usuário deletado com sucesso.");
+                } else {
+                    responseNode.put("status", 404);
+                    responseNode.put("mensagem", "Usuário não encontrado.");
+                }
+            } catch (Exception e) {
+                responseNode.put("status", 500);
+                responseNode.put("mensagem", "Erro ao deletar o usuário.");
+                e.printStackTrace();
+            }
+            responseWriter.println(responseNode.toString());
+        }
+
 
         private void updateUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             System.out.println(requestData);
@@ -175,6 +213,7 @@ public class Server {
                 responseWriter.println(responseNode.toString());
             }
         }
+
 
 
         private void loginUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {

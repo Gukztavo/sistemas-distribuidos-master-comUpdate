@@ -63,7 +63,9 @@ public class Cliente {
             System.out.println("1. Cadastrar Candidato");
             System.out.println("2. Login");
             System.out.println("3. Visualizar Perfil");
-            System.out.println("4. Logout");
+            System.out.println("4. Atualizar Candidato");
+            System.out.println("5. Deletar Usuário");
+            System.out.println("6. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
 
@@ -82,7 +84,11 @@ public class Cliente {
                     break;
                 case "4":
                     sendUpdateRequest(json,stdIn,out);
+                    break;
                 case "5":
+                    sendDeleteRequest(json, stdIn, out);
+                    break;
+                case "6":
                     sendLogoutRequest(json, out);
                     break;
                 default:
@@ -95,10 +101,11 @@ public class Cliente {
 
             if (operationChoice.equals("2") && operationResponse.contains("200")) {
                 currentUserEmail = json.get("email").asText();
-            } else if (operationChoice.equals("4")) {
+            } else if (operationChoice.equals("6")) {
                 currentUserEmail = null;
             }
         }
+
     }
 
     private static void collectAndSendCandidateDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
@@ -140,6 +147,17 @@ public class Cliente {
         json.put("token", currentUserEmail);
         out.println(json.toString());
     }
+    private static void sendDeleteRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        System.out.println("Digite o e-mail do usuário que deseja deletar:");
+        String emailToDelete = stdIn.readLine();
+        if (emailToDelete.isEmpty()) {
+            System.out.println("E-mail não pode estar vazio.");
+            return;
+        }
+        json.put("operacao", "deletarUsuario");
+        json.put("email", emailToDelete);
+        out.println(json.toString());
+    }
 
     private static void sendUpdateRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         if (currentUserEmail == null) {
@@ -151,10 +169,12 @@ public class Cliente {
         String newName = stdIn.readLine();
 
         json.put("operacao", "atualizarCandidato");
-        json.put("token", currentUserEmail);  // Aqui, usando o email como token simplificado
+        json.put("token", currentUserEmail);  // Aqui, usando o email como token
         json.put("nome", newName);
 
         out.println(json.toString());
     }
 
 }
+
+
