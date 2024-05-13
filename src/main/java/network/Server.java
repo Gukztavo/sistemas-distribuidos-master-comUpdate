@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 
+
 public class
 Server {
 
@@ -167,52 +168,69 @@ Server {
 
 
         private void updateUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-            System.out.println(requestData);
-            String newName = requestData.get("nome").asText();
-            String userEmail = requestData.get("email").asText();
-            String userSenha = requestData.get("senha").asText();
+            // Obtendo o novo nome a partir da solicitação.
+            String newName = requestData.path("nome").asText(null);
 
-            if (userEmail == null) {
-                responseNode.put("status", 401);
-                responseNode.put("mensagem", "Token de autenticação inválido.");
+            // Verifica se o nome foi fornecido
+            if (newName == null || newName.isEmpty()) {
+                responseNode.put("status", 400);
+                responseNode.put("mensagem", "Nome é obrigatório para atualização.");
                 responseWriter.println(responseNode.toString());
                 return;
             }
 
-            Pessoa userToUpdate = getUserByEmailAndPassword(userEmail,userSenha);
-
-            if (userToUpdate == null) {
-                responseNode.put("status", 404);
-                responseNode.put("mensagem", "Usuário não encontrado.");
-                responseWriter.println(responseNode.toString());
-                return;
-            }
-
+            // Verifica se o nome é válido
             if (!isValidName(newName)) {
                 responseNode.put("status", 400);
-                responseNode.put("mensagem", "Nome inválido. Deve ter entre 6 e 30 caracteres");
+                responseNode.put("mensagem", "Nome inválido. Deve ter entre 6 e 30 caracteres.");
                 responseWriter.println(responseNode.toString());
                 return;
             }
 
-            userToUpdate.setNome(newName);
-            updateUserInfo(userToUpdate, responseNode, responseWriter);
-        }
+            // Recupera o email do usuário logado
+            String userEmail = requestData.get("email").asText(); // A variável deve ser definida e acessível
 
-        private void updateUserInfo(Pessoa user, ObjectNode responseNode, PrintWriter responseWriter) {
+            if (userEmail == null || userEmail.isEmpty()) {
+                responseNode.put("status", 401);
+                responseNode.put("mensagem", "Nenhum usuário está logado atualmente.");
+                responseWriter.println(responseNode.toString());
+                return;
+            }
+
+            // Atualizando o usuário no banco de dados
             try (Session session = sessionFactory.openSession()) {
                 Transaction transaction = session.beginTransaction();
-                session.update(user);
-                transaction.commit();
-                responseNode.put("status", 200);
-                responseNode.put("mensagem", "Nome do usuário atualizado com sucesso.");
-                responseWriter.println(responseNode.toString());
+                try {
+                    Pessoa userToUpdate = (Pessoa) session.createQuery("FROM pessoa WHERE email = :email", Pessoa.class)
+                            .setParameter("email", userEmail)
+                            .uniqueResult();
+
+                    if (userToUpdate == null) {
+                        transaction.rollback();
+                        responseNode.put("status", 404);
+                        responseNode.put("mensagem", "Usuário não encontrado.");
+                        responseWriter.println(responseNode.toString());
+                        return;
+                    }
+
+                    userToUpdate.setNome(newName);  // Atualizando o nome
+                    session.saveOrUpdate(userToUpdate);  // Salva ou atualiza o usuário
+                    transaction.commit();
+                    responseNode.put("status", 200);
+                    responseNode.put("mensagem", "Nome do usuário atualizado com sucesso.");
+                } catch (Exception e) {
+                    transaction.rollback();
+                    throw e; // Lança exceção para tratamento mais adiante
+                }
             } catch (Exception e) {
                 responseNode.put("status", 500);
-                responseNode.put("mensagem", "Erro ao atualizar o nome do usuário.");
+                responseNode.put("mensagem", "Erro ao atualizar o nome do usuário: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
                 responseWriter.println(responseNode.toString());
             }
         }
+
 
 
 
