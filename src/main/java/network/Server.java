@@ -81,8 +81,8 @@ Server {
                         loginUser(requestJson, responseNode, responseWriter);
                         break;
                     case "atualizarCandidato":
-                      updateUser(requestJson, responseNode, responseWriter);
-                       break;
+                        updateUser(requestJson, responseNode, responseWriter);
+                        break;
                     case "visualizarCandidato":
                         viewCandidateProfile(requestJson, responseNode, responseWriter);
                         break;
@@ -256,22 +256,25 @@ Server {
             String email = requestData.get("email").asText();
             Pessoa user = sessionToUserMap.get(email);
             if (user != null) {
-                responseNode.put("status", 200);
+                responseNode.put("status", 201);
                 responseNode.put("nome", user.getNome());
-                responseNode.put("email", user.getEmail());
+                responseNode.put("senha", user.getSenha());
+                responseNode.put("operacao","visualizarCandidato");
             } else {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido");
             }
-            responseWriter.println(responseNode.toString());
+            responseWriter.println(responseNode.toString()+"vizualizarCandidato");
         }
 
-        private void logoutUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        private void logoutUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) throws IOException {
             String token = requestData.get("token").asText();
+            System.out.println(token);
 
             if (token == null || token.isEmpty()) {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação é nulo ou vazio");
+                System.out.println("testee");
                 responseWriter.println(responseNode.toString());
                 return;
             }
@@ -282,15 +285,16 @@ Server {
                     .findFirst()
                     .orElse(null);
             System.out.println("cheguei antes do if");
-            if (userEmail == null) {
+            if (token != null) {
                 // Remoção do usuário e do token
                 emailToSessionMap.remove(userEmail);
                 sessionToUserMap.remove(userEmail);
+                sessionToUserMap.remove(token);
+
 
                 responseNode.put("status", 200);
                 responseNode.put("mensagem", "Logout realizado com sucesso.");
                 System.out.println("Logout realizado com sucesso para o usuário: " + userEmail);
-                System.out.println("cheguei no if ");
             } else {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido ou sessão já encerrada.");
@@ -362,4 +366,3 @@ Server {
         }
     }
 }
-

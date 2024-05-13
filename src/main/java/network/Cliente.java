@@ -167,13 +167,19 @@ public class Cliente {
 
         System.out.println("Digite o novo nome do candidato:");
         String newName = stdIn.readLine();
+        System.out.println("Digite senha ");
+        String newSenha = stdIn.readLine();
 
         json.put("operacao", "atualizarCandidato");
         json.put("email", currentUserEmail);  // Aqui, usando o email como token
         json.put("nome", newName);
+        json.put("senha",newSenha);
 
         out.println(json.toString());
     }
+
+
+
 
 }
 
