@@ -59,7 +59,7 @@ Server {
                 String clientRequest;
                 while ((clientRequest = inputReader.readLine()) != null) {
                     System.out.println("Received operation from client: " + clientRequest);
-                    processarRequest(clientRequest, outputWriter);
+                    handleClientRequest(clientRequest, outputWriter);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -68,7 +68,7 @@ Server {
 
 
 
-        private void processarRequest(String requestData, PrintWriter responseWriter) {
+        private void handleClientRequest(String requestData, PrintWriter responseWriter) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode responseNode = mapper.createObjectNode();
@@ -77,10 +77,10 @@ Server {
                 String operationType = requestJson.get("operacao").asText();
                 switch (operationType) {
                     case "cadastrarCandidato":
-                        registrarCandidato(requestJson, responseNode, responseWriter);
+                        registerCandidate(requestJson, responseNode, responseWriter);
                         break;
                     case "loginCandidato":
-                        loginCandidato(requestJson, responseNode, responseWriter);
+                        loginUser(requestJson, responseNode, responseWriter);
                         break;
                     case "atualizarCandidato":
                         updateUser(requestJson, responseNode, responseWriter);
@@ -100,15 +100,13 @@ Server {
                         responseWriter.println(responseNode.toString());
                         break;
                 }
-                responseWriter.println(responseNode.toString());
-                responseWriter.flush();
             } catch (IOException e) {
                 e.printStackTrace();
                 responseWriter.println("{\"status\": 500, \"mensagem\": \"Erro ao processar a operação\"}");
             }
         }
 
-        private void registrarCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        private void registerCandidate(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String nome = requestData.get("nome").asText();
             String email = requestData.get("email").asText();
             String senha = requestData.get("senha").asText();
@@ -136,7 +134,6 @@ Server {
                 }
             }
             responseWriter.println(responseNode.toString());
-            responseWriter.flush();
         }
 
         private void deleteUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
@@ -157,8 +154,8 @@ Server {
                     Transaction transaction = session.beginTransaction();
                     session.delete(user);
                     transaction.commit();
-                    responseNode.put("status", 200);
-                    responseNode.put("mensagem", "Usuário deletado com sucesso.");
+                    responseNode.put("operacao","apagarCandidato");
+                    responseNode.put("status", 201);
                 } else {
                     responseNode.put("status", 404);
                     responseNode.put("mensagem", "Usuário não encontrado.");
@@ -169,7 +166,6 @@ Server {
                 e.printStackTrace();
             }
             responseWriter.println(responseNode.toString());
-            responseWriter.flush();
         }
 
 
@@ -256,7 +252,8 @@ Server {
 
 
 
-        private void loginCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+
+        private void loginUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String email = requestData.get("email").asText();
             String senha = requestData.get("senha").asText();
 
@@ -272,54 +269,50 @@ Server {
                 responseNode.put("mensagem", "E-mail ou senha incorretos");
             }
             responseWriter.println(responseNode.toString());
-            responseWriter.flush();
-
         }
 
         private void visualizarCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String email = requestData.get("email").asText();
             Pessoa user = sessionToUserMap.get(email);
             if (user != null) {
+                responseNode.put("operacao","visualizarCandidato");
                 responseNode.put("status", 201);
                 responseNode.put("nome", user.getNome());
                 responseNode.put("senha", user.getSenha());
-                responseNode.put("operacao","visualizarCandidato");
             } else {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido");
             }
             responseWriter.println(responseNode.toString());
-            responseWriter.flush();
         }
 
         private void logoutUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) throws IOException {
             String token = requestData.get("token").asText();
-            System.out.println(token);
+
             if (token == null || token.isEmpty()) {
                 responseNode.put("status", 401);
-                responseNode.put("mensagem", "Login ou senha incorretos");
+                responseNode.put("mensagem", "Email ou senha incorretos");
                 System.out.println("testee");
                 responseWriter.println(responseNode.toString());
                 return;
             }
-
             if (sessionToUserMap.containsKey(token)) {
                 // Remove o usuário associado ao token
                 sessionToUserMap.remove(token);
-            // Encontra o email do usuário associado ao token
-            String userEmail = emailToSessionMap.entrySet().stream()
-                    .filter(entry -> token.equals(entry.getValue()))
-                    .map(Map.Entry::getKey)
-                    .findFirst()
-                    .orElse(null);
+                // Encontra o email do token
+                String userEmail = emailToSessionMap.entrySet().stream()
+                        .filter(entry -> token.equals(entry.getValue()))
+                        .map(Map.Entry::getKey)
+                        .findFirst()
+                        .orElse(null);
 
-            if (token != null) {
-                // remove usuário e  token
-                    sessionToUserMap.remove(token);
-                    sessionToUserMap.remove(emailToSessionMap);
-//                    emailToSessionMap.values().remove(token);  // funcionou asssim
-//                    emailToSessionMap.values().removeIf(existingToken -> existingToken.equals(token));
-            }
+                if (token != null) {
+                    // remove usuário e  token
+//                    sessionToUserMap.remove(token);
+//                    sessionToUserMap.remove(emailToSessionMap);
+                    emailToSessionMap.values().remove(token);
+                    emailToSessionMap.values().removeIf(existingToken -> existingToken.equals(token));
+                }
                 responseNode.put("operacao","logout");
                 responseNode.put("status", 204);
                 responseNode.put("token",token);
@@ -333,7 +326,8 @@ Server {
 
         }
 
-        //daqui pra baixo tem as acões de verificações e BD
+
+
 
 
         private boolean isEmailAlreadyExists(String email) {

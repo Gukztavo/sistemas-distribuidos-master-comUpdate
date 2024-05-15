@@ -131,7 +131,7 @@ public class Cliente {
     private static void sendProfileRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null) {
             System.out.println("Você precisa fazer login primeiro.");
-            return;
+
         }
         json.put("operacao", "visualizarCandidato");
         json.put("email", currentUserEmail);
@@ -142,10 +142,9 @@ public class Cliente {
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null) {
             System.out.println("Você não está logado.");
-            return;
         }
         json.put("operacao", "logout");
-        json.put("token", currentToken);
+        json.put("token", currentUserEmail);
         out.println(json.toString());
     }
 
@@ -153,7 +152,7 @@ public class Cliente {
         System.out.println("Digite o e-mail do usuário que deseja deletar:");
         String emailToDelete = stdIn.readLine();
         if (emailToDelete.isEmpty()) {
-            System.out.println("E-mail não pode estar vazio.");
+            System.out.println("e-mail não pode estar vazio.");
             return;
         }
         json.put("operacao", "deletarUsuario");
