@@ -14,7 +14,7 @@ import java.util.Scanner;
 public class Cliente {
     protected static int defaultPort = 22222;
     private static String currentUserEmail; // Armazena o email do usuário atual
-
+    private static String currentToken;
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
@@ -81,7 +81,7 @@ public class Cliente {
                     break;
                 case "3":
                     sendProfileRequest(json, out);
-                    break;
+                        break;
                 case "4":
                     sendUpdateRequest(json,stdIn,out);
                     break;
@@ -138,6 +138,7 @@ public class Cliente {
         out.println(json.toString());
     }
 
+
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null) {
             System.out.println("Você não está logado.");
@@ -147,6 +148,7 @@ public class Cliente {
         json.put("token", currentUserEmail);
         out.println(json.toString());
     }
+
     private static void sendDeleteRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         System.out.println("Digite o e-mail do usuário que deseja deletar:");
         String emailToDelete = stdIn.readLine();

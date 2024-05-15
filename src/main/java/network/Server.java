@@ -66,6 +66,8 @@ Server {
             }
         }
 
+
+
         private void handleClientRequest(String requestData, PrintWriter responseWriter) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -170,15 +172,15 @@ Server {
         private void updateUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             // Obtendo o novo nome a partir da solicitação.
             String newName = requestData.path("nome").asText(null);
+            String newPassword = requestData.path("senha").asText(null);
 
             // Verifica se o nome foi fornecido
-            if (newName == null || newName.isEmpty()) {
+            if (newName == null || newName.isEmpty() || newPassword == null || newPassword.isEmpty()) {
                 responseNode.put("status", 400);
-                responseNode.put("mensagem", "Nome é obrigatório para atualização.");
+                responseNode.put("mensagem", "Nome e senha são obrigatório para atualização.");
                 responseWriter.println(responseNode.toString());
                 return;
             }
-
             // Verifica se o nome é válido
             if (!isValidName(newName)) {
                 responseNode.put("status", 400);
@@ -186,6 +188,15 @@ Server {
                 responseWriter.println(responseNode.toString());
                 return;
             }
+
+            // Validação da senha
+            if (!isValidPassword(newPassword)) {
+                responseNode.put("status", 400);
+                responseNode.put("mensagem", "Senha inválida. Deve conter apenas caracteres numéricos e ter entre 3 e 8 caracteres.");
+                responseWriter.println(responseNode.toString());
+                return;
+            }
+
 
             // Recupera o email do usuário logado
             String userEmail = requestData.get("email").asText(); // A variável deve ser definida e acessível
@@ -208,15 +219,16 @@ Server {
                     if (userToUpdate == null) {
                         transaction.rollback();
                         responseNode.put("status", 404);
-                        responseNode.put("mensagem", "Usuário não encontrado.");
+                        responseNode.put("mensagem", "E-mail não encontrado");
                         responseWriter.println(responseNode.toString());
                         return;
                     }
 
-                    userToUpdate.setNome(newName);  // Atualizando o nome
+                    userToUpdate.setNome(newName);  // atualizando o nome
+                    userToUpdate.setSenha(newPassword); // atualiza a senha
                     session.saveOrUpdate(userToUpdate);  // Salva ou atualiza o usuário
                     transaction.commit();
-                    responseNode.put("status", 200);
+                    responseNode.put("status", 201);
                     responseNode.put("mensagem", "Nome do usuário atualizado com sucesso.");
                 } catch (Exception e) {
                     transaction.rollback();
@@ -264,7 +276,7 @@ Server {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido");
             }
-            responseWriter.println(responseNode.toString()+"vizualizarCandidato");
+            responseWriter.println(responseNode.toString());
         }
 
         private void logoutUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) throws IOException {
@@ -273,36 +285,44 @@ Server {
 
             if (token == null || token.isEmpty()) {
                 responseNode.put("status", 401);
-                responseNode.put("mensagem", "Token de autenticação é nulo ou vazio");
+                responseNode.put("mensagem", "Login ou senha incorretos");
                 System.out.println("testee");
                 responseWriter.println(responseNode.toString());
-                return;
+                return ;
             }
+
+
+            if (sessionToUserMap.containsKey(token)) {
+                // Remove o usuário associado ao token
+                sessionToUserMap.remove(token);
             // Encontra o email do usuário associado ao token
             String userEmail = emailToSessionMap.entrySet().stream()
                     .filter(entry -> token.equals(entry.getValue()))
                     .map(Map.Entry::getKey)
                     .findFirst()
                     .orElse(null);
-            System.out.println("cheguei antes do if");
+
             if (token != null) {
                 // Remoção do usuário e do token
-                emailToSessionMap.remove(userEmail);
-                sessionToUserMap.remove(userEmail);
-                sessionToUserMap.remove(token);
+                    sessionToUserMap.remove(token);
+                    emailToSessionMap.remove(userEmail);
+            }
+                responseNode.put("operacao","logout");
+                responseNode.put("status", 204);
+                responseNode.put("token", token);
 
+                responseWriter.println(responseNode.toString());
 
-                responseNode.put("status", 200);
-                responseNode.put("mensagem", "Logout realizado com sucesso.");
-                System.out.println("Logout realizado com sucesso para o usuário: " + userEmail);
             } else {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido ou sessão já encerrada.");
-                System.out.println("Falha no logout: Token inválido ou sessão já encerrada.");
             }
-
             responseWriter.println(responseNode.toString());
+
         }
+
+
+
 
         private boolean isEmailAlreadyExists(String email) {
             try (Session session = sessionFactory.openSession()) {
