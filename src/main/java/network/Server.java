@@ -59,7 +59,7 @@ Server {
                 String clientRequest;
                 while ((clientRequest = inputReader.readLine()) != null) {
                     System.out.println("Received operation from client: " + clientRequest);
-                    handleClientRequest(clientRequest, outputWriter);
+                    processarRequest(clientRequest, outputWriter);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -68,7 +68,7 @@ Server {
 
 
 
-        private void handleClientRequest(String requestData, PrintWriter responseWriter) {
+        private void processarRequest(String requestData, PrintWriter responseWriter) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode responseNode = mapper.createObjectNode();
@@ -77,16 +77,16 @@ Server {
                 String operationType = requestJson.get("operacao").asText();
                 switch (operationType) {
                     case "cadastrarCandidato":
-                        registerCandidate(requestJson, responseNode, responseWriter);
+                        registrarCandidato(requestJson, responseNode, responseWriter);
                         break;
                     case "loginCandidato":
-                        loginUser(requestJson, responseNode, responseWriter);
+                        loginCandidato(requestJson, responseNode, responseWriter);
                         break;
                     case "atualizarCandidato":
                         updateUser(requestJson, responseNode, responseWriter);
                         break;
                     case "visualizarCandidato":
-                        viewCandidateProfile(requestJson, responseNode, responseWriter);
+                        visualizarCandidato(requestJson, responseNode, responseWriter);
                         break;
                     case "deletarUsuario":
                         deleteUser(requestJson, responseNode, responseWriter);
@@ -100,13 +100,15 @@ Server {
                         responseWriter.println(responseNode.toString());
                         break;
                 }
+                responseWriter.println(responseNode.toString());
+                responseWriter.flush();
             } catch (IOException e) {
                 e.printStackTrace();
                 responseWriter.println("{\"status\": 500, \"mensagem\": \"Erro ao processar a operação\"}");
             }
         }
 
-        private void registerCandidate(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        private void registrarCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String nome = requestData.get("nome").asText();
             String email = requestData.get("email").asText();
             String senha = requestData.get("senha").asText();
@@ -134,6 +136,7 @@ Server {
                 }
             }
             responseWriter.println(responseNode.toString());
+            responseWriter.flush();
         }
 
         private void deleteUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
@@ -166,6 +169,7 @@ Server {
                 e.printStackTrace();
             }
             responseWriter.println(responseNode.toString());
+            responseWriter.flush();
         }
 
 
@@ -179,21 +183,24 @@ Server {
                 responseNode.put("status", 400);
                 responseNode.put("mensagem", "Nome e senha são obrigatório para atualização.");
                 responseWriter.println(responseNode.toString());
+                responseWriter.flush();
                 return;
             }
             // Verifica se o nome é válido
             if (!isValidName(newName)) {
+                responseNode.put("operacao", "atualizarCandidato");
                 responseNode.put("status", 400);
-                responseNode.put("mensagem", "Nome inválido. Deve ter entre 6 e 30 caracteres.");
                 responseWriter.println(responseNode.toString());
+                responseWriter.flush();
                 return;
             }
 
-            // Validação da senha
+            // Validacao da senha
             if (!isValidPassword(newPassword)) {
                 responseNode.put("status", 400);
                 responseNode.put("mensagem", "Senha inválida. Deve conter apenas caracteres numéricos e ter entre 3 e 8 caracteres.");
                 responseWriter.println(responseNode.toString());
+                responseWriter.flush();
                 return;
             }
 
@@ -205,6 +212,7 @@ Server {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Nenhum usuário está logado atualmente.");
                 responseWriter.println(responseNode.toString());
+                responseWriter.flush();
                 return;
             }
 
@@ -221,18 +229,19 @@ Server {
                         responseNode.put("status", 404);
                         responseNode.put("mensagem", "E-mail não encontrado");
                         responseWriter.println(responseNode.toString());
+                        responseWriter.flush();
                         return;
                     }
 
                     userToUpdate.setNome(newName);  // atualizando o nome
                     userToUpdate.setSenha(newPassword); // atualiza a senha
-                    session.saveOrUpdate(userToUpdate);  // Salva ou atualiza o usuário
+                    session.saveOrUpdate(userToUpdate);  // atualiza o usuário
                     transaction.commit();
+                    responseNode.put("operacao", "atualizarCandidato");
                     responseNode.put("status", 201);
-                    responseNode.put("mensagem", "Nome do usuário atualizado com sucesso.");
                 } catch (Exception e) {
                     transaction.rollback();
-                    throw e; // Lança exceção para tratamento mais adiante
+                    throw e;
                 }
             } catch (Exception e) {
                 responseNode.put("status", 500);
@@ -240,13 +249,14 @@ Server {
                 e.printStackTrace();
             } finally {
                 responseWriter.println(responseNode.toString());
+                responseWriter.flush();
             }
         }
 
 
 
 
-        private void loginUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        private void loginCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String email = requestData.get("email").asText();
             String senha = requestData.get("senha").asText();
 
@@ -262,9 +272,11 @@ Server {
                 responseNode.put("mensagem", "E-mail ou senha incorretos");
             }
             responseWriter.println(responseNode.toString());
+            responseWriter.flush();
+
         }
 
-        private void viewCandidateProfile(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        private void visualizarCandidato(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
             String email = requestData.get("email").asText();
             Pessoa user = sessionToUserMap.get(email);
             if (user != null) {
@@ -277,20 +289,19 @@ Server {
                 responseNode.put("mensagem", "Token de autenticação inválido");
             }
             responseWriter.println(responseNode.toString());
+            responseWriter.flush();
         }
 
         private void logoutUser(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) throws IOException {
             String token = requestData.get("token").asText();
             System.out.println(token);
-
             if (token == null || token.isEmpty()) {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Login ou senha incorretos");
                 System.out.println("testee");
                 responseWriter.println(responseNode.toString());
-                return ;
+                return;
             }
-
 
             if (sessionToUserMap.containsKey(token)) {
                 // Remove o usuário associado ao token
@@ -303,25 +314,26 @@ Server {
                     .orElse(null);
 
             if (token != null) {
-                // Remoção do usuário e do token
+                // remove usuário e  token
                     sessionToUserMap.remove(token);
-                    emailToSessionMap.remove(userEmail);
+                    sessionToUserMap.remove(emailToSessionMap);
+//                    emailToSessionMap.values().remove(token);  // funcionou asssim
+//                    emailToSessionMap.values().removeIf(existingToken -> existingToken.equals(token));
             }
                 responseNode.put("operacao","logout");
                 responseNode.put("status", 204);
-                responseNode.put("token", token);
-
-                responseWriter.println(responseNode.toString());
+                responseNode.put("token",token);
 
             } else {
                 responseNode.put("status", 401);
                 responseNode.put("mensagem", "Token de autenticação inválido ou sessão já encerrada.");
             }
             responseWriter.println(responseNode.toString());
+            responseWriter.flush();
 
         }
 
-
+        //daqui pra baixo tem as acões de verificações e BD
 
 
         private boolean isEmailAlreadyExists(String email) {

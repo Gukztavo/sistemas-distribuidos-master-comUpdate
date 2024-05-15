@@ -18,8 +18,8 @@ public class Cliente {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        String serverHostname = getInput(scanner, "Digite o nome do servidor (o padrão é 127.0.0.1): ", "127.0.0.1");
-        int serverPort = getPort(scanner, "Digite o número da porta do servidor (o padrão é 22222): ", defaultPort);
+        String serverHostname = getInput(scanner, "Digite o IP do servidor (o padrão é 127.0.0.1): ", "127.0.0.1");
+        int serverPort = getPort(scanner, "Digite a da porta do servidor (o padrão é 22222): ", defaultPort);
 
         System.out.println("Tentando conectar ao servidor " + serverHostname + " na porta " + serverPort + ".");
         try (
@@ -145,7 +145,7 @@ public class Cliente {
             return;
         }
         json.put("operacao", "logout");
-        json.put("token", currentUserEmail);
+        json.put("token", currentToken);
         out.println(json.toString());
     }
 
@@ -173,7 +173,7 @@ public class Cliente {
         String newSenha = stdIn.readLine();
 
         json.put("operacao", "atualizarCandidato");
-        json.put("email", currentUserEmail);  // Aqui, usando o email como token
+        json.put("email", currentUserEmail);
         json.put("nome", newName);
         json.put("senha",newSenha);
 
