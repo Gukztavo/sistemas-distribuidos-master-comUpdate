@@ -1,5 +1,6 @@
 package network;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -13,7 +14,7 @@ import java.util.Scanner;
 
 public class Cliente {
     protected static int defaultPort = 22222;
-    private static String currentUserEmail; // Armazena o email do usuário atual
+    private static String currentUserEmail;
     private static String currentToken;
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -29,7 +30,30 @@ public class Cliente {
                 BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in))
         ) {
             System.out.println("Conectado ao servidor.");
-            handleUserOperations(stdIn, out, in);
+            while (true) {
+                System.out.println("Selecione a categoria:");
+                System.out.println("1. Candidato");
+                System.out.println("2. Empresa");
+                System.out.println("3. Sair");
+                System.out.print("Opção: ");
+                String categoryChoice = stdIn.readLine();
+
+                switch (categoryChoice) {
+                    case "1":
+                        handleUserOperations(stdIn, out, in);
+                        break;
+                    case "2":
+                        operacoesEmpresa(stdIn, out, in);
+                        break;
+                    case "3":
+                        System.out.println("Encerrando o cliente.");
+                        return;
+                    default:
+                        System.out.println("Opção inválida. Por favor, tente novamente.");
+                        break;
+                }
+            }
+
         } catch (UnknownHostException e) {
             System.err.println("Não foi possível encontrar o host: " + serverHostname);
             System.exit(1);
@@ -64,7 +88,7 @@ public class Cliente {
             System.out.println("2. Login");
             System.out.println("3. Visualizar Perfil");
             System.out.println("4. Atualizar Candidato");
-            System.out.println("5. Deletar Usuário");
+            System.out.println("5. Apagar Usuário");
             System.out.println("6. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
@@ -81,7 +105,7 @@ public class Cliente {
                     break;
                 case "3":
                     sendProfileRequest(json, out);
-                        break;
+                    break;
                 case "4":
                     sendUpdateRequest(json,stdIn,out);
                     break;
@@ -108,6 +132,82 @@ public class Cliente {
 
     }
 
+    private static void operacoesEmpresa(BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        while (true) {
+            System.out.println("Escolha a operação:");
+            System.out.println("1. Cadastrar Empresa");
+            System.out.println("2. Login");
+            System.out.println("3. Visualizar Perfil");
+            System.out.println("4. Atualizar Empresa");
+            System.out.println("5. Apagar Empresa");
+            System.out.println("6. Logout");
+            System.out.print("Opção: ");
+            String operationChoice = stdIn.readLine();
+
+            ObjectNode json = mapper.createObjectNode();
+            String operationResponse;
+
+            switch (operationChoice) {
+                case "1":
+                    collectAndSendEmpresaDetails(json, "cadastrarEmpresa", stdIn, out);
+                    break;
+                case "2":
+                    collectAndSendLoginEmpresa(json, "loginEmpresa", stdIn, out);
+                    break;
+                case "3":
+                    sendEmpresaProfileRequest(json, out);
+                    break;
+                case "4":
+                    sendUpdateEmpresaRequest(json, stdIn, out);
+                    break;
+                case "5":
+                    sendDeleteEmpresaRequest(json, stdIn, out);
+                    break;
+                case "6":
+                    sendLogoutRequest(json, out);
+                    break;
+                default:
+                    System.out.println("Opção inválida. Encerrando o cliente.");
+                    return;
+            }
+
+            operationResponse = in.readLine();
+            System.out.println("Resposta do servidor: " + operationResponse);
+            JsonNode responseNode = mapper.readTree(operationResponse);
+
+            if (operationChoice.equals("2") && responseNode.path("status").asInt() == 200) {
+                if (responseNode.has("email") && responseNode.has("token")) {
+                    currentUserEmail = responseNode.get("email").asText();
+                    currentToken = responseNode.get("token").asText();
+                } else {
+                    System.out.println("Resposta do servidor não contém emailEmpresa ou token");
+                }
+            } else if (operationChoice.equals("6")) {
+                currentUserEmail = null;
+                currentToken = null;
+            }
+        }
+    }
+
+    private static void collectAndSendEmpresaDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
+        json.put("operacao", operation);
+        System.out.println("Digite a razaoSocial da empresa:");
+        json.put("razaoSocial", stdIn.readLine());
+        System.out.println("Digite o email da empresa:");
+        json.put("emailEmpresa", stdIn.readLine());
+        System.out.println("Digite o cnpj da empresa :");
+        json.put("cnpj", stdIn.readLine());
+        System.out.println("Digite a senha da empresa :");
+        json.put("senha", stdIn.readLine());
+        System.out.println("Digite a descricao da empresa :");
+        json.put("descricao", stdIn.readLine());
+        System.out.println("Digite o ramo da empresa :");
+        json.put("ramo", stdIn.readLine());
+        out.println(json.toString());
+    }
+
     private static void collectAndSendCandidateDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);
         System.out.println("Digite o nome do candidato:");
@@ -115,6 +215,15 @@ public class Cliente {
         System.out.println("Digite o email do candidato:");
         json.put("email", stdIn.readLine());
         System.out.println("Digite a senha do candidato:");
+        json.put("senha", stdIn.readLine());
+        out.println(json.toString());
+    }
+
+    private static void collectAndSendLoginEmpresa(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
+        json.put("operacao", operation);
+        System.out.println("Digite o email:");
+        json.put("emailEmpresa", stdIn.readLine());
+        System.out.println("Digite a senha:");
         json.put("senha", stdIn.readLine());
         out.println(json.toString());
     }
@@ -137,6 +246,15 @@ public class Cliente {
         json.put("email", currentUserEmail);
         out.println(json.toString());
     }
+    private static void sendEmpresaProfileRequest(ObjectNode json, PrintWriter out) {
+        if (currentUserEmail == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+
+        }
+        json.put("operacao", "visualizarEmpresa");
+        json.put("emailEmpresa", currentUserEmail);
+        out.println(json.toString());
+    }
 
 
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
@@ -155,8 +273,19 @@ public class Cliente {
             System.out.println("e-mail não pode estar vazio.");
             return;
         }
-        json.put("operacao", "deletarUsuario");
+        json.put("operacao", "apagarCandidato");
         json.put("email", emailToDelete);
+        out.println(json.toString());
+    }
+    private static void sendDeleteEmpresaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        System.out.println("Digite o e-mail da Empresa que deseja deletar:");
+        String emailToDelete = stdIn.readLine();
+        if (emailToDelete.isEmpty()) {
+            System.out.println("e-mail não pode estar vazio.");
+            return;
+        }
+        json.put("operacao", "apagarEmpresa");
+        json.put("emailEmpresa", emailToDelete); // Alterado de "email" para "emailEmpresa"
         out.println(json.toString());
     }
 
@@ -177,8 +306,28 @@ public class Cliente {
         json.put("senha",newSenha);
 
         out.println(json.toString());
+
     }
 
+    private static void sendUpdateEmpresaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentUserEmail == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        System.out.println("Digite o novo nome da Empresa:");
+        String newRazaoSocial = stdIn.readLine();
+        System.out.println("Digite senha ");
+        String newSenha = stdIn.readLine();
+
+        json.put("operacao", "atualizarEmpresa");
+        json.put("email", currentUserEmail);
+        json.put("Razao Social", newRazaoSocial);
+        json.put("senha",newSenha);
+
+        out.println(json.toString());
+
+    }
 
 
 
