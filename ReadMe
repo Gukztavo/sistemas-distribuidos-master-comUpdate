@@ -1,0 +1,15 @@
+Para rodar o projeto vai precisar criar um banco de dados Mysql, com nome "sistemas_distribuidos", ip: localhost, porta 3306. Conforme a linha abaixo
+<property name="hibernate.connection.url">jdbc:mysql://localhost:3306/sistemas_distribuidos</property>
+o banco deve conter uma tabela chamada "pessoa", com (TIPO, TAMANHO):
+id(char, 36 caracteres, chave primaria)*Usar autoIncrement, 
+nome (varchar, 50), 
+senha(INT , 6),
+email (varchar, 50). 
+
+Para rodar o codigo, será nescessario carregar as configs da Maeven, o local da maeven pode variar de ID. No Intellij ela fica localizada no canto superior direto. 
+Deve clicar no icone da Maeven (M) e clicar na opção "reload all maeven projects".  
+Após isso, já será possivel inicar o "Servidor" e "Cliente", que fica localizado dentro da pasta network do projeto. 
+Para testar no ambiente local, não é nescessario inserir ip e porta. apenas confirmar com a tecla "Enter", os valores já estão definido como padrao para o acesso local.
+As informações de cadastro,update e exclusão ficaram salvas no banco de dados.
+
+Obs: favor não alterar estrutura e nem linhas de codigos, podem afetar o funcionamento do projeto. 
