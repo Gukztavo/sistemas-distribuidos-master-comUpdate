@@ -16,6 +16,7 @@ public class Cliente {
     protected static int defaultPort = 22222;
     private static String currentUserEmail;
     private static String currentToken;
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
@@ -107,7 +108,7 @@ public class Cliente {
                     sendProfileRequest(json, out);
                     break;
                 case "4":
-                    sendUpdateRequest(json,stdIn,out);
+                    sendUpdateRequest(json, stdIn, out);
                     break;
                 case "5":
                     sendDeleteRequest(json, stdIn, out);
@@ -122,14 +123,20 @@ public class Cliente {
 
             operationResponse = in.readLine();
             System.out.println("Resposta do servidor: " + operationResponse);
+            JsonNode responseNode = mapper.readTree(operationResponse);
 
-            if (operationChoice.equals("2") && operationResponse.contains("200")) {
-                currentUserEmail = json.get("email").asText();
+            if (operationChoice.equals("2") && responseNode.path("status").asInt() == 200) {
+                if (responseNode.has("email") && responseNode.has("token")) {
+                    currentUserEmail = responseNode.get("email").asText();
+                    currentToken = responseNode.get("token").asText();
+                } else {
+                    System.out.println("Resposta do servidor não contém email ou token");
+                }
             } else if (operationChoice.equals("6")) {
                 currentUserEmail = null;
+                currentToken = null;
             }
         }
-
     }
 
     private static void operacoesEmpresa(BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
@@ -240,29 +247,32 @@ public class Cliente {
     private static void sendProfileRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null) {
             System.out.println("Você precisa fazer login primeiro.");
-
+            return;
         }
         json.put("operacao", "visualizarCandidato");
-        json.put("email", currentUserEmail);
+        json.put("email", currentUserEmail);  // Inclui o email atual do usuário
         out.println(json.toString());
     }
-    private static void sendEmpresaProfileRequest(ObjectNode json, PrintWriter out) {
-        if (currentUserEmail == null) {
-            System.out.println("Você precisa fazer login primeiro.");
 
+
+    private static void sendEmpresaProfileRequest(ObjectNode json, PrintWriter out) {
+        if (currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
         }
         json.put("operacao", "visualizarEmpresa");
         json.put("emailEmpresa", currentUserEmail);
+        json.put("token", currentToken);
         out.println(json.toString());
     }
-
 
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null) {
             System.out.println("Você não está logado.");
+            return;
         }
         json.put("operacao", "logout");
-        json.put("token", currentUserEmail);
+        json.put("token", currentToken);
         out.println(json.toString());
     }
 
@@ -277,6 +287,7 @@ public class Cliente {
         json.put("email", emailToDelete);
         out.println(json.toString());
     }
+
     private static void sendDeleteEmpresaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         System.out.println("Digite o e-mail da Empresa que deseja deletar:");
         String emailToDelete = stdIn.readLine();
@@ -285,7 +296,7 @@ public class Cliente {
             return;
         }
         json.put("operacao", "apagarEmpresa");
-        json.put("emailEmpresa", emailToDelete); // Alterado de "email" para "emailEmpresa"
+        json.put("emailEmpresa", emailToDelete);
         out.println(json.toString());
     }
 
@@ -297,40 +308,47 @@ public class Cliente {
 
         System.out.println("Digite o novo nome do candidato:");
         String newName = stdIn.readLine();
-        System.out.println("Digite senha ");
+        System.out.println("Digite senha:");
         String newSenha = stdIn.readLine();
 
         json.put("operacao", "atualizarCandidato");
         json.put("email", currentUserEmail);
         json.put("nome", newName);
-        json.put("senha",newSenha);
+        json.put("senha", newSenha);
 
         out.println(json.toString());
-
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        String response = in.readLine();
+        System.out.println("Resposta do servidor: " + response);
     }
 
     private static void sendUpdateEmpresaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
-        if (currentUserEmail == null) {
+        if (currentToken == null) {
             System.out.println("Você precisa fazer login primeiro.");
             return;
         }
 
-        System.out.println("Digite o novo nome da Empresa:");
+        System.out.println("Digite a nova razão social da empresa:");
         String newRazaoSocial = stdIn.readLine();
-        System.out.println("Digite senha ");
+        System.out.println("Digite o novo CNPJ da empresa:");
+        String newCnpj = stdIn.readLine();
+        System.out.println("Digite a nova senha da empresa:");
         String newSenha = stdIn.readLine();
+        System.out.println("Digite a nova descrição da empresa:");
+        String newDescricao = stdIn.readLine();
+        System.out.println("Digite o novo ramo da empresa:");
+        String newRamo = stdIn.readLine();
 
         json.put("operacao", "atualizarEmpresa");
-        json.put("email", currentUserEmail);
-        json.put("Razao Social", newRazaoSocial);
-        json.put("senha",newSenha);
+        json.put("emailAtual", currentUserEmail); // Adiciona o email atual da empresa para identificar a sessão
+        json.put("razaoSocial", newRazaoSocial);
+        json.put("cnpj", newCnpj);
+        json.put("senha", newSenha);
+        json.put("descricao", newDescricao);
+        json.put("ramo", newRamo);
 
         out.println(json.toString());
-
     }
 
 
-
 }
-
-

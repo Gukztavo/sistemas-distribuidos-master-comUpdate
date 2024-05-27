@@ -25,7 +25,8 @@
         <property name="current_session_context_class">thread</property>
 
         <!-- Mapeamento de classes -->
-        <mapping class="model.Pessoa"/>
+
         <mapping class="model.Empresa"/>
+        <mapping class="model.Pessoa"/>
     </session-factory>
 </hibernate-configuration>
