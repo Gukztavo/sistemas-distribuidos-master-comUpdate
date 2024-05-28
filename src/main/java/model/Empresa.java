@@ -20,7 +20,7 @@ public class Empresa implements Serializable {
 
     private String razaoSocial;
 
-    private String emailEmpresa;
+    private String email;
 
     private String cnpj;
 
@@ -35,7 +35,7 @@ public class Empresa implements Serializable {
         this.descricao = descricao;
         this.senha = senha;
         this.cnpj = cnpj;
-        this.emailEmpresa = emailEmpresa;
+        this.email = email;
         this.razaoSocial = razaoSocial;
 
     }
@@ -61,12 +61,12 @@ public class Empresa implements Serializable {
         this.razaoSocial = razaoSocial;
     }
 
-    public String getEmailEmpresa() {
-        return emailEmpresa;
+    public String getEmail() {
+        return email;
     }
 
-    public void setEmailEmpresa(String emailEmpresa) {
-        this.emailEmpresa = emailEmpresa;
+    public void setEmail(String emailEmpresa) {
+        this.email = emailEmpresa;
     }
 
     public String getCnpj() {

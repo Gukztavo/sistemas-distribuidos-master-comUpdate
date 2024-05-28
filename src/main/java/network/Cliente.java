@@ -15,7 +15,9 @@ import java.util.Scanner;
 public class Cliente {
     protected static int defaultPort = 22222;
     private static String currentUserEmail;
+    private static String currentEmpEmail;
     private static String currentToken;
+    private static String currentTokenEmp;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -185,15 +187,14 @@ public class Cliente {
             JsonNode responseNode = mapper.readTree(operationResponse);
 
             if (operationChoice.equals("2") && responseNode.path("status").asInt() == 200) {
-                if (responseNode.has("email") && responseNode.has("token")) {
-                    currentUserEmail = responseNode.get("email").asText();
-                    currentToken = responseNode.get("token").asText();
+                if (responseNode.has("token")) {
+                    currentTokenEmp = responseNode.get("token").asText();
                 } else {
-                    System.out.println("Resposta do servidor não contém emailEmpresa ou token");
+                    System.out.println("Resposta do servidor não contém email ou token");
                 }
             } else if (operationChoice.equals("6")) {
-                currentUserEmail = null;
-                currentToken = null;
+                currentEmpEmail = null;
+                currentTokenEmp = null;
             }
         }
     }
@@ -203,7 +204,7 @@ public class Cliente {
         System.out.println("Digite a razaoSocial da empresa:");
         json.put("razaoSocial", stdIn.readLine());
         System.out.println("Digite o email da empresa:");
-        json.put("emailEmpresa", stdIn.readLine());
+        json.put("email", stdIn.readLine());
         System.out.println("Digite o cnpj da empresa :");
         json.put("cnpj", stdIn.readLine());
         System.out.println("Digite a senha da empresa :");
@@ -229,7 +230,9 @@ public class Cliente {
     private static void collectAndSendLoginEmpresa(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);
         System.out.println("Digite o email:");
-        json.put("emailEmpresa", stdIn.readLine());
+        String emailSave =  stdIn.readLine();
+        json.put("email", emailSave);
+        currentEmpEmail = emailSave;
         System.out.println("Digite a senha:");
         json.put("senha", stdIn.readLine());
         out.println(json.toString());
@@ -256,13 +259,13 @@ public class Cliente {
 
 
     private static void sendEmpresaProfileRequest(ObjectNode json, PrintWriter out) {
-        if (currentToken == null) {
+        if (currentEmpEmail == null) {
             System.out.println("Você precisa fazer login primeiro.");
             return;
         }
         json.put("operacao", "visualizarEmpresa");
-        json.put("emailEmpresa", currentUserEmail);
-        json.put("token", currentToken);
+        json.put("email", currentEmpEmail);
+        //json.put("token", currentToken);
         out.println(json.toString());
     }
 
@@ -296,7 +299,7 @@ public class Cliente {
             return;
         }
         json.put("operacao", "apagarEmpresa");
-        json.put("emailEmpresa", emailToDelete);
+        json.put("email", emailToDelete);
         out.println(json.toString());
     }
 
@@ -323,13 +326,15 @@ public class Cliente {
     }
 
     private static void sendUpdateEmpresaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
-        if (currentToken == null) {
+        if (currentEmpEmail == null) {
             System.out.println("Você precisa fazer login primeiro.");
             return;
         }
 
         System.out.println("Digite a nova razão social da empresa:");
         String newRazaoSocial = stdIn.readLine();
+        System.out.println("Digite o novo email da empresa:");
+        String newEmail = stdIn.readLine();
         System.out.println("Digite o novo CNPJ da empresa:");
         String newCnpj = stdIn.readLine();
         System.out.println("Digite a nova senha da empresa:");
@@ -340,8 +345,9 @@ public class Cliente {
         String newRamo = stdIn.readLine();
 
         json.put("operacao", "atualizarEmpresa");
-        json.put("emailAtual", currentUserEmail); // Adiciona o email atual da empresa para identificar a sessão
+        json.put("emailAtual", currentEmpEmail); // Adiciona o email atual da empresa para identificar a sessão
         json.put("razaoSocial", newRazaoSocial);
+        json.put("email",newEmail);
         json.put("cnpj", newCnpj);
         json.put("senha", newSenha);
         json.put("descricao", newDescricao);

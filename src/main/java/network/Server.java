@@ -124,7 +124,7 @@ Server {
                         logoutUser(requestJson, responseNode, responseWriter);
                         break;
                     case "cadastrarEmpresa":
-                        registrarEmpresa(requestJson, responseNode, responseWriter);
+                        cadastrarEmpresa(requestJson, responseNode, responseWriter);
                         break;
                     case "loginEmpresa":
                         loginEmpresa(requestJson, responseNode, responseWriter);
@@ -479,26 +479,26 @@ Server {
     //--------------------------------Empresa---------------------------------------------
 
 
-    private static void registrarEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+    private static void cadastrarEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
         String razaoSocial = requestData.get("razaoSocial").asText();
-        String emailEmpresa = requestData.get("emailEmpresa").asText();
+        String email= requestData.get("email").asText();
         String cnpj = requestData.get("cnpj").asText();
         String senha = requestData.get("senha").asText();
         String descricao = requestData.get("descricao").asText();
         String ramo = requestData.get("ramo").asText();
 
-        if (isEmailAlreadyExists(emailEmpresa) || isCNPJAlreadyExists(cnpj)) {
+        if (isEmailAlreadyExists(email) || isCNPJAlreadyExists(cnpj)) {
             responseNode.put("status", 400);
             responseNode.put("mensagem", "E-mail ou CNPJ já cadastrado");
-        } else if (!isValidEmail(emailEmpresa) || !isValidCNPJ(cnpj) || !isValidPassword(senha)) {
+        } else if (!isValidEmail(email) || !isValidCNPJ(cnpj) || !isValidPassword(senha)) {
             responseNode.put("status", 400);
             responseNode.put("mensagem", "Dados inválidos. Verifique o e-mail, CNPJ ou senha.");
         } else {
-            int status = createEmpresa(razaoSocial, emailEmpresa, cnpj, senha, descricao, ramo);
+            int status = createEmpresa(razaoSocial, email, cnpj, senha, descricao, ramo);
             if (status == 201) {
                 String token = UUID.randomUUID().toString();
-                emailToSessionMapEmp.put(emailEmpresa, token);
-                sessionToUserMapEmp.put(token, new Empresa(razaoSocial, emailEmpresa, cnpj, senha, descricao, ramo));
+                emailToSessionMapEmp.put(email, token);
+                sessionToUserMapEmp.put(token, new Empresa(razaoSocial, email, cnpj, senha, descricao, ramo));
                 responseNode.put("status", 201);
                 responseNode.put("token", token);
             } else {
@@ -510,23 +510,17 @@ Server {
         responseWriter.println(responseNode.toString());
     }
     private static void visualizarEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String emailEmpresa = requestData.get("emailEmpresa").asText();
-        String token = requestData.get("token").asText();
+        String email = requestData.get("email").asText();
+        //String token = requestData.get("token").asText();
 
         // Verifica se o token está presente e válido
-        if (token == null || token.isEmpty() || !sessionToUserMapEmp.containsKey(token)) {
-            responseNode.put("status", 401);
-            responseNode.put("mensagem", "Token de autenticação inválido");
-            responseWriter.println(responseNode.toString());
-            return;
-        }
-
+        String token = emailToSessionMapEmp.get(email);  // Obtém o token a partir do email
         Empresa empresa = sessionToUserMapEmp.get(token);
-        if (empresa != null && empresa.getEmailEmpresa().equals(emailEmpresa)) {
+        if (empresa != null && empresa.getEmail().equals(email)) {
             responseNode.put("operacao", "visualizarEmpresa");
             responseNode.put("status", 200);
             responseNode.put("razaoSocial", empresa.getRazaoSocial());
-            responseNode.put("emailEmpresa", empresa.getEmailEmpresa());
+            responseNode.put("email", empresa.getEmail());
             responseNode.put("cnpj", empresa.getCnpj());
             responseNode.put("descricao", empresa.getDescricao());
             responseNode.put("ramo", empresa.getRamo());
@@ -540,19 +534,21 @@ Server {
     private static void updateEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
         // Obtendo os novos dados a partir da solicitação.
         String newRazaoSocial = requestData.path("razaoSocial").asText(null);
+        String newEmail = requestData.path("email").asText(null);
         String newCnpj = requestData.path("cnpj").asText(null);
         String newPassword = requestData.path("senha").asText(null);
         String newDescricao = requestData.path("descricao").asText(null);
         String newRamo = requestData.path("ramo").asText(null);
-        String emailAtual = requestData.path("emailAtual").asText(null);
-
+        String emailAtual = requestData.path("email").asText(null);
+        String userEmail = requestData.get("email").asText();
         // Verifica se os dados foram fornecidos e são válidos.
         if (newRazaoSocial == null || newRazaoSocial.isEmpty() ||
+                newEmail == null || newEmail.isEmpty()||
                 newCnpj == null || newCnpj.isEmpty() ||
                 newPassword == null || newPassword.isEmpty() ||
                 newDescricao == null || newDescricao.isEmpty() ||
                 newRamo == null || newRamo.isEmpty() ||
-                emailAtual == null || emailAtual.isEmpty()) {
+                userEmail == null || emailAtual.isEmpty()) {
             responseNode.put("status", 400);
             responseNode.put("mensagem", "Todos os campos são obrigatórios para atualização.");
             responseWriter.println(responseNode.toString());
@@ -571,7 +567,7 @@ Server {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
             try {
-                Empresa empresaToUpdate = (Empresa) session.createQuery("FROM empresa WHERE emailEmpresa = :emailAtual", Empresa.class)
+                Empresa empresaToUpdate = (Empresa) session.createQuery("FROM empresa WHERE email = :emailAtual", Empresa.class)
                         .setParameter("emailAtual", emailAtual)
                         .uniqueResult();
 
@@ -584,6 +580,7 @@ Server {
                 }
 
                 empresaToUpdate.setRazaoSocial(newRazaoSocial);
+                empresaToUpdate.setEmail(newEmail);
                 empresaToUpdate.setCnpj(newCnpj);
                 empresaToUpdate.setSenha(newPassword);
                 empresaToUpdate.setDescricao(newDescricao);
@@ -614,7 +611,7 @@ Server {
     }
 
     private static void apagarEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String empEmail = requestData.get("emailEmpresa").asText(); // Correto: usando "emailEmpresa" como chave
+        String empEmail = requestData.get("email").asText(); // Correto: usando "email" como chave
 
         if (empEmail == null || empEmail.isEmpty()) {
             responseNode.put("status", 400);
@@ -624,8 +621,8 @@ Server {
         }
 
         try (Session session = sessionFactory.openSession()) {
-            Empresa empresa = session.createQuery("FROM empresa WHERE emailEmpresa = :emailEmpresa", Empresa.class)
-                    .setParameter("emailEmpresa", empEmail)
+            Empresa empresa = session.createQuery("FROM empresa WHERE email = :email", Empresa.class)
+                    .setParameter("email", empEmail)
                     .uniqueResult();
             if (empresa != null) {
                 Transaction transaction = session.beginTransaction();
@@ -648,10 +645,10 @@ Server {
 
 
 
-    private static boolean isEmailAlreadyExists(String emailEmpresa) {
+    private static boolean isEmailAlreadyExists(String email) {
         try (Session session = sessionFactory.openSession()) {
-            return session.createQuery("SELECT 1 FROM Empresa WHERE emailEmpresa = :emailEmpresa")
-                    .setParameter("emailEmpresa", emailEmpresa)
+            return session.createQuery("SELECT 1 FROM Empresa WHERE email = :email")
+                    .setParameter("email", email)
                     .uniqueResult() != null;
         } catch (Exception e) {
             e.printStackTrace();
@@ -686,10 +683,10 @@ Server {
     }
 
 
-    private static int createEmpresa(String razaoSocial, String emailEmpresa, String cnpj, String senha, String descricao, String ramo) {
-        Empresa empresa = new Empresa(razaoSocial,emailEmpresa,cnpj,senha,descricao,ramo);
+    private static int createEmpresa(String razaoSocial, String email, String cnpj, String senha, String descricao, String ramo) {
+        Empresa empresa = new Empresa(razaoSocial,email,cnpj,senha,descricao,ramo);
         empresa.setRazaoSocial(razaoSocial);
-        empresa.setEmailEmpresa(emailEmpresa);
+        empresa.setEmail(email);
         empresa.setCnpj(cnpj);
         empresa.setSenha(senha);
         empresa.setDescricao(descricao);
@@ -713,26 +710,26 @@ Server {
     }
     private static void loginEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
         // Verifica se os campos necessários estão presentes no JSON
-        if (!requestData.has("emailEmpresa") || !requestData.has("senha")) {
+        if (!requestData.has("email") || !requestData.has("senha")) {
             responseNode.put("status", 400);
             responseNode.put("mensagem", "E-mail e senha são obrigatórios.");
             responseWriter.println(responseNode.toString());
             return;
         }
 
-        String emailEmpresa = requestData.get("emailEmpresa").asText();
+        String email = requestData.get("email").asText();
         String senha = requestData.get("senha").asText();
 
         // Procura a empresa pelo e-mail e senha fornecidos
-        Empresa empresa = getEmpresaByEmailAndSenha(emailEmpresa, senha);
+        Empresa empresa = getEmpresaByEmailAndSenha(email, senha);
         if (empresa != null) {
             String token = UUID.randomUUID().toString();
-            emailToSessionMapEmp.put(emailEmpresa, token);
+            emailToSessionMapEmp.put(email, token);
             sessionToUserMapEmp.put(token, empresa);
             responseNode.put("operacao", "loginEmpresa");
             responseNode.put("status", 200);
             responseNode.put("token", token);
-            responseNode.put("email", emailEmpresa); // Incluindo o email na resposta para evitar null pointer no cliente
+            responseNode.put("email", email); // Incluindo o email na resposta para evitar null pointer no cliente
         } else {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "E-mail ou senha incorretos");
@@ -740,10 +737,10 @@ Server {
         responseWriter.println(responseNode.toString());
     }
 
-    private static Empresa getEmpresaByEmailAndSenha(String emailEmpresa, String senha) {
+    private static Empresa getEmpresaByEmailAndSenha(String email, String senha) {
         try (Session session = sessionFactory.openSession()) {
-            return session.createQuery("FROM empresa WHERE emailEmpresa = :emailEmpresa AND senha = :senha", Empresa.class)
-                    .setParameter("emailEmpresa", emailEmpresa)
+            return session.createQuery("FROM empresa WHERE email = :email AND senha = :senha", Empresa.class)
+                    .setParameter("email", email)
                     .setParameter("senha", senha)
                     .uniqueResult();
         } catch (Exception e) {
