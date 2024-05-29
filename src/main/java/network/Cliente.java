@@ -175,7 +175,7 @@ public class Cliente {
                     sendDeleteEmpresaRequest(json, stdIn, out);
                     break;
                 case "6":
-                    sendLogoutRequest(json, out);
+                    sendLogoutEmpRequest(json, out);
                     break;
                 default:
                     System.out.println("Opção inválida. Encerrando o cliente.");
@@ -270,12 +270,21 @@ public class Cliente {
     }
 
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
-        if (currentUserEmail == null) {
+        if (currentUserEmail == null && currentEmpEmail == null) {
             System.out.println("Você não está logado.");
             return;
         }
         json.put("operacao", "logout");
         json.put("token", currentToken);
+        out.println(json.toString());
+    }
+    private static void sendLogoutEmpRequest(ObjectNode json, PrintWriter out) {
+        if (currentEmpEmail == null) {
+            System.out.println("Você não está logado.");
+            return;
+        }
+        json.put("operacao", "logout");
+        json.put("token", currentTokenEmp);
         out.println(json.toString());
     }
 
