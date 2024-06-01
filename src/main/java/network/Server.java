@@ -239,6 +239,7 @@ Server {
                     session.delete(user);
                     transaction.commit();
                     responseNode.put("status", 200);
+                    responseNode.put("operacao", "apagarCandidato");
                     responseNode.put("mensagem", "Usuário deletado com sucesso.");
                 } else {
                     responseNode.put("status", 404);
@@ -506,7 +507,7 @@ Server {
                 responseNode.put("mensagem", "Erro ao registrar a empresa.");
             }
         }
-
+        responseNode.put("operacao","cadastrarCandidato");
         responseWriter.println(responseNode.toString());
     }
     private static void visualizarEmpresa(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
@@ -518,7 +519,7 @@ Server {
         Empresa empresa = sessionToUserMapEmp.get(token);
         if (empresa != null && empresa.getEmail().equals(email)) {
             responseNode.put("operacao", "visualizarEmpresa");
-            responseNode.put("status", 200);
+            responseNode.put("status", 201);
             responseNode.put("razaoSocial", empresa.getRazaoSocial());
             responseNode.put("email", empresa.getEmail());
             responseNode.put("cnpj", empresa.getCnpj());
@@ -628,7 +629,9 @@ Server {
                 Transaction transaction = session.beginTransaction();
                 session.delete(empresa);
                 transaction.commit();
-                responseNode.put("status", 200);
+                responseNode.put("status", 201);
+                responseNode.put("operacao", "apagarEmpresa");
+
                 responseNode.put("mensagem", "Empresa deletada com sucesso.");
             } else {
                 responseNode.put("status", 404);
@@ -732,6 +735,7 @@ Server {
             responseNode.put("email", email); // Incluindo o email na resposta para evitar null pointer no cliente
         } else {
             responseNode.put("status", 401);
+            responseNode.put("operacao", "loginEmpresa");
             responseNode.put("mensagem", "E-mail ou senha incorretos");
         }
         responseWriter.println(responseNode.toString());

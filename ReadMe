@@ -6,6 +6,20 @@ nome (varchar, 50),
 senha(INT , 6),
 email (varchar, 50). 
 
+agora crie tabela empresa
+id(char, 36 caracteres, chave primaria)*Usar autoIncrement,
+cnpj VARCHAR 14
+email VARCHAR 50 
+senha VARCHAR 50 
+descricao VARCHAR 100
+ramo VARCHAR 100 
+razaoSocial VARCHAR  50
+
+
+                                                                                                                                  
+
+
+
 Para rodar o codigo, será nescessario carregar as configs da Maeven, o local da maeven pode variar de ID. No Intellij ela fica localizada no canto superior direto. 
 Deve clicar no icone da Maeven (M) e clicar na opção "reload all maeven projects".  
 Após isso, já será possivel inicar o "Servidor" e "Cliente", que fica localizado dentro da pasta network do projeto. 

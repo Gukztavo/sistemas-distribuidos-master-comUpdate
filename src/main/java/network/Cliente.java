@@ -308,6 +308,7 @@ public class Cliente {
             return;
         }
         json.put("operacao", "apagarEmpresa");
+        json.put("token",currentTokenEmp);
         json.put("email", emailToDelete);
         out.println(json.toString());
     }
@@ -342,7 +343,7 @@ public class Cliente {
 
         System.out.println("Digite a nova razão social da empresa:");
         String newRazaoSocial = stdIn.readLine();
-        System.out.println("Digite o novo email da empresa:");
+        System.out.println("Digite o email da empresa:");
         String newEmail = stdIn.readLine();
         System.out.println("Digite o novo CNPJ da empresa:");
         String newCnpj = stdIn.readLine();
