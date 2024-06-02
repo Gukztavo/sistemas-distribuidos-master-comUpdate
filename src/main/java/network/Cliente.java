@@ -2,6 +2,7 @@ package network;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.BufferedReader;
@@ -92,7 +93,8 @@ public class Cliente {
             System.out.println("3. Visualizar Perfil");
             System.out.println("4. Atualizar Candidato");
             System.out.println("5. Apagar Usuário");
-            System.out.println("6. Logout");
+            System.out.println("6. Cadastrar Competência/Experiência");
+            System.out.println("7. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
 
@@ -116,6 +118,9 @@ public class Cliente {
                     sendDeleteRequest(json, stdIn, out);
                     break;
                 case "6":
+                    sendCompetenciaExperienciaRequest(json, stdIn, out);
+                    break;
+                case "7":
                     sendLogoutRequest(json, out);
                     break;
                 default:
@@ -134,7 +139,7 @@ public class Cliente {
                 } else {
                     System.out.println("Resposta do servidor não contém email ou token");
                 }
-            } else if (operationChoice.equals("6")) {
+            } else if (operationChoice.equals("7")) {
                 currentUserEmail = null;
                 currentToken = null;
             }
@@ -198,6 +203,38 @@ public class Cliente {
             }
         }
     }
+
+
+    private static void sendCompetenciaExperienciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentUserEmail == null || currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        json.put("operacao", "cadastrarCompetenciaExperiencia");
+        json.put("email", currentUserEmail);
+        json.put("token", currentToken);
+
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode competenciasExperiencias = mapper.createArrayNode();
+
+        System.out.println("Digite a competência:");
+        String competencia = stdIn.readLine();
+
+        System.out.println("Digite os anos de experiência:");
+        int experiencia = Integer.parseInt(stdIn.readLine());
+
+        ObjectNode competenciaExperiencia = mapper.createObjectNode();
+        competenciaExperiencia.put("competencia", competencia);
+        competenciaExperiencia.put("experiencia", experiencia);
+
+        competenciasExperiencias.add(competenciaExperiencia);
+
+        json.set("competenciaExperiencia", competenciasExperiencias);
+        out.println(json.toString());
+    }
+
+
 
     private static void collectAndSendEmpresaDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);

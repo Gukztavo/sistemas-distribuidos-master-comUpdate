@@ -11,12 +11,7 @@
         <property name="hibernate.connection.password"></property>
 
         <!-- Configuração do dialeto MySQL -->
-        <!-- JDBC connection pool settings ... using built-in test pool -->
-        <property name="connection.pool_size">1</property>
-
-        <!-- Select our SQL dialect -->
         <property name="dialect">org.hibernate.dialect.MySQL8Dialect</property>
-
 
         <!-- Echo the SQL to stdout -->
         <property name="show_sql">true</property>
@@ -25,8 +20,8 @@
         <property name="current_session_context_class">thread</property>
 
         <!-- Mapeamento de classes -->
-
-        <mapping class="model.Empresa"/>
         <mapping class="model.Pessoa"/>
+        <mapping class="model.Empresa"/>
+        <mapping class="model.CompetenciaExperiencia"/> <!-- Adicione esta linha -->
     </session-factory>
 </hibernate-configuration>

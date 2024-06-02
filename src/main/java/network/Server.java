@@ -1,5 +1,6 @@
 package network;
 
+import model.CompetenciaExperiencia;
 import model.Empresa;
 import model.Pessoa;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -137,6 +138,9 @@ Server {
                         break;
                     case "apagarEmpresa":
                         apagarEmpresa(requestJson, responseNode, responseWriter);
+                        break;
+                    case "cadastrarCompetenciaExperiencia":
+                        cadastrarCompetenciaExperiencia(requestJson, responseNode, responseWriter);
                         break;
                     default:
                         responseNode.put("status", 400);
@@ -684,6 +688,51 @@ Server {
             return false;
         }
     }
+    private static void cadastrarCompetenciaExperiencia(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+            try {
+                String email = requestData.get("email").asText();
+                Pessoa candidato = getUserByEmail(email); // Recupera o candidato pelo email
+
+                if (candidato == null) {
+                    responseNode.put("status", 404);
+                    responseNode.put("mensagem", "Candidato não encontrado.");
+                    responseWriter.println(responseNode.toString());
+                    return;
+                }
+
+                JsonNode competenciasExperiencias = requestData.get("competenciaExperiencia");
+
+                for (JsonNode competenciaExperienciaJson : competenciasExperiencias) {
+                    CompetenciaExperiencia competenciaExperiencia = new CompetenciaExperiencia();
+                    competenciaExperiencia.setCompetencia(competenciaExperienciaJson.get("competencia").asText());
+                    competenciaExperiencia.setExperiencia(competenciaExperienciaJson.get("experiencia").asInt());
+                    competenciaExperiencia.setCandidato(candidato); // Associa a competência ao candidato
+
+                    session.save(competenciaExperiencia); // Salva a competência no banco
+                }
+
+                transaction.commit();
+                responseNode.put("status", 201);
+                responseNode.put("mensagem", "Competências e experiências cadastradas com sucesso.");
+            } catch (Exception e) {
+                transaction.rollback();
+                responseNode.put("status", 500);
+                responseNode.put("mensagem", "Erro ao cadastrar competências e experiências: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            responseNode.put("status", 500);
+            responseNode.put("mensagem", "Erro ao conectar ao banco de dados: " + e.getMessage());
+        }
+        responseWriter.println(responseNode.toString());
+    }
+
+
+
+
+
+
 
 
     private static int createEmpresa(String razaoSocial, String email, String cnpj, String senha, String descricao, String ramo) {
@@ -753,4 +802,16 @@ Server {
             return null;
         }
     }
+
+    private static Pessoa getUserByEmail(String email) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery("FROM pessoa WHERE email = :email", Pessoa.class)
+                    .setParameter("email", email)
+                    .uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }
