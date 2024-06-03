@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import service.CompetenciaService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Scanner;
 
 public class Cliente {
@@ -94,7 +96,10 @@ public class Cliente {
             System.out.println("4. Atualizar Candidato");
             System.out.println("5. Apagar Usuário");
             System.out.println("6. Cadastrar Competência/Experiência");
-            System.out.println("7. Logout");
+            System.out.println("7. Vizualizar Competencias/Experiencia");
+            System.out.println("8. Atualizar Competencias/Experiencia");
+            System.out.println("9. Apagar Competencias/Experiencia");
+            System.out.println("10. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
 
@@ -121,6 +126,15 @@ public class Cliente {
                     sendCompetenciaExperienciaRequest(json, stdIn, out);
                     break;
                 case "7":
+                    sendVisualizarCompetenciaExperienciaRequest(json, out);
+                    break;
+                case "8":
+                    sendUpdateCompetenciaExperienciaRequest(json, stdIn, out);
+                    break;
+                case "9":
+                    sendDeleteCompetenciaRequest(json, stdIn, out, in);
+                    break;
+                case "10":
                     sendLogoutRequest(json, out);
                     break;
                 default:
@@ -218,8 +232,15 @@ public class Cliente {
         ObjectMapper mapper = new ObjectMapper();
         ArrayNode competenciasExperiencias = mapper.createArrayNode();
 
+        List<String> competenciasFixas = CompetenciaService.getCompetenciasFixas();
+        System.out.println("Escolha uma competência entre as opções: " + competenciasFixas);
+
         System.out.println("Digite a competência:");
         String competencia = stdIn.readLine();
+        if (!competenciasFixas.contains(competencia)) {
+            System.out.println("Competência inválida. Tente novamente.");
+            return;
+        }
 
         System.out.println("Digite os anos de experiência:");
         int experiencia = Integer.parseInt(stdIn.readLine());
@@ -235,6 +256,76 @@ public class Cliente {
     }
 
 
+    private static void sendVisualizarCompetenciaExperienciaRequest(ObjectNode json, PrintWriter out) {
+        if (currentUserEmail == null || currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+        }
+
+        json.put("operacao", "visualizarCompetenciaExperiencia");
+        json.put("email", currentUserEmail);
+        json.put("token", currentToken);
+
+        out.println(json.toString());
+
+    }
+
+    private static void sendUpdateCompetenciaExperienciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentUserEmail == null || currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        json.put("operacao", "atualizarCompetenciaExperiencia");
+        json.put("email", currentUserEmail);
+        json.put("token", currentToken);
+
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode competenciasExperiencias = mapper.createArrayNode();
+
+        List<String> competenciasFixas = CompetenciaService.getCompetenciasFixas();
+        System.out.println("Escolha uma competência entre as opções: " + competenciasFixas);
+
+        System.out.println("Digite a competência atual:");
+        String competenciaAtual = stdIn.readLine();
+        while (!competenciasFixas.contains(competenciaAtual)) {
+            System.out.println("Competência inválida. Tente novamente:");
+            competenciaAtual = stdIn.readLine();
+        }
+
+        System.out.println("Digite o novo nome da competência:");
+        String novaCompetencia = stdIn.readLine();
+
+        System.out.println("Digite os anos de experiência:");
+        int experiencia = Integer.parseInt(stdIn.readLine());
+
+        ObjectNode competenciaExperiencia = mapper.createObjectNode();
+        competenciaExperiencia.put("competenciaAtual", competenciaAtual);
+        competenciaExperiencia.put("novaCompetencia", novaCompetencia);
+        competenciaExperiencia.put("experiencia", experiencia);
+
+        competenciasExperiencias.add(competenciaExperiencia);
+        json.set("competenciaExperiencia", competenciasExperiencias);
+
+        out.println(json.toString());
+    }
+    private static void sendDeleteCompetenciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
+        if (currentUserEmail == null || currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        json.put("operacao", "apagarCompetenciaExperiencia");
+        json.put("email", currentUserEmail);
+        json.put("token", currentToken);
+
+        System.out.println("Digite a competência que deseja deletar:");
+        String competencia = stdIn.readLine();
+        json.put("competencia", competencia);
+
+        out.println(json.toString());
+
+
+    }
 
     private static void collectAndSendEmpresaDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);
