@@ -170,7 +170,12 @@ public class Cliente {
             System.out.println("3. Visualizar Perfil");
             System.out.println("4. Atualizar Empresa");
             System.out.println("5. Apagar Empresa");
-            System.out.println("6. Logout");
+            System.out.println("6. cadastrar vaga");
+            System.out.println("7. visualizar Vaga");
+            System.out.println("8. Atualizar Vaga");
+            System.out.println("9. Apagar Vaga");
+            System.out.println("10. Listar Vaga");
+            System.out.println("11. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
 
@@ -194,8 +199,25 @@ public class Cliente {
                     sendDeleteEmpresaRequest(json, stdIn, out);
                     break;
                 case "6":
-                    sendLogoutEmpRequest(json, out);
+                    sendVagaRequest(json,stdIn, out);
                     break;
+                case "7":
+                    sendVisualizarVagaRequest(json, stdIn, out);
+                    break;
+                case "8":
+                    sendUpdateVagaRequest(json, stdIn, out);
+                    break;
+                case "9":
+                    sendDeleteVagaRequest(json, stdIn, out);
+                    break;
+                case "10":
+                    sendListarVagasRequest(json, stdIn, out);
+                    break;
+                case "11":
+                    sendLogoutRequest(json, out);
+                    break;
+
+
                 default:
                     System.out.println("Opção inválida. Encerrando o cliente.");
                     return;
@@ -218,6 +240,138 @@ public class Cliente {
         }
     }
 
+    //----------------------------Vagas----------------------------------------------
+    private static void sendVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentEmpEmail == null || currentTokenEmp == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+        }
+
+        json.put("operacao", "cadastrarVaga");
+        json.put("email", currentEmpEmail);
+        json.put("token", currentTokenEmp);
+
+        System.out.println("Digite o nome da vaga:");
+        json.put("nome", stdIn.readLine());
+
+        System.out.println("Digite a faixa salarial:");
+        json.put("faixaSalarial", Double.parseDouble(stdIn.readLine()));
+
+        System.out.println("Digite a descrição da vaga:");
+        json.put("descricao", stdIn.readLine());
+
+        System.out.println("Digite o estado da vaga (Disponível/Divulgavel):");
+        json.put("estado", stdIn.readLine());
+
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode competenciasArray = mapper.createArrayNode();
+
+        System.out.println("Digite as competências da vaga (separadas por vírgula):");
+        String[] competencias = stdIn.readLine().split(",");
+        for (String competencia : competencias) {
+            competenciasArray.add(competencia.trim());
+        }
+
+        json.set("competencias", competenciasArray);
+        out.println(json.toString());
+    }
+
+    private static void sendVisualizarVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentEmpEmail == null || currentTokenEmp == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        json.put("operacao", "visualizarVaga");
+        json.put("email", currentEmpEmail);
+        json.put("token", currentTokenEmp);
+
+        System.out.println("Digite o ID da vaga:");
+        Long idVaga = Long.parseLong(stdIn.readLine());
+        json.put("idVaga", idVaga);
+
+        out.println(json.toString());
+    }
+    private static void sendUpdateVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentEmpEmail == null || currentTokenEmp == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+
+        }
+
+        System.out.println("Digite o ID da vaga:");
+        int idVaga = Integer.parseInt(stdIn.readLine());
+
+        System.out.println("Digite o novo nome da vaga:");
+        String novoNome = stdIn.readLine();
+
+        System.out.println("Digite a nova faixa salarial da vaga:");
+        double novaFaixaSalarial = Double.parseDouble(stdIn.readLine());
+
+        System.out.println("Digite a nova descrição da vaga:");
+        String novaDescricao = stdIn.readLine();
+
+        System.out.println("Digite o novo estado da vaga: Disponível / Divulgavel");
+        String novoEstado = stdIn.readLine();
+
+        System.out.println("Digite as novas competências (separadas por vírgula):");
+        String competenciasInput = stdIn.readLine();
+        String[] competenciasArray = competenciasInput.split(",");
+
+        json.put("operacao", "atualizarVaga");
+        json.put("idVaga", idVaga);
+        json.put("nome", novoNome);
+        json.put("email", currentEmpEmail);
+        json.put("faixaSalarial", novaFaixaSalarial);
+        json.put("descricao", novaDescricao);
+        json.put("estado", novoEstado);
+        json.put("token", currentTokenEmp);
+
+        ArrayNode competenciasJsonArray = json.putArray("competencias");
+        for (String competencia : competenciasArray) {
+            competenciasJsonArray.add(competencia.trim());
+        }
+
+        out.println(json.toString());
+    }
+
+    private static void sendDeleteVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentEmpEmail == null || currentTokenEmp == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+            return;
+        }
+
+        System.out.println("Digite o ID da vaga que deseja deletar:");
+        String idVaga = stdIn.readLine();
+
+        json.put("operacao", "apagarVaga");
+        json.put("email", currentEmpEmail);
+        json.put("idVaga", Integer.parseInt(idVaga));
+        json.put("token", currentTokenEmp);
+
+        out.println(json.toString());
+    }
+
+    private static void sendListarVagasRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentEmpEmail == null || currentTokenEmp == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+        }
+
+        json.put("operacao", "listarVagas");
+        json.put("email", currentEmpEmail);
+        json.put("token", currentTokenEmp);
+
+        out.println(json.toString());
+    }
+
+
+
+
+
+
+
+
+
+
+    //------------------------------------------------------------------------------
 
     private static void sendCompetenciaExperienciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         if (currentUserEmail == null || currentToken == null) {

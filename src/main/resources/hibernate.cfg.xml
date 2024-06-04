@@ -22,6 +22,10 @@
         <!-- Mapeamento de classes -->
         <mapping class="model.Pessoa"/>
         <mapping class="model.Empresa"/>
-        <mapping class="model.CompetenciaExperiencia"/> <!-- Adicione esta linha -->
+        <mapping class="model.CompetenciaExperiencia"/> 
+        <mapping class="model.Vaga"/>
+        <mapping class="model.VagaCompetencia"/>
+
+
     </session-factory>
 </hibernate-configuration>
