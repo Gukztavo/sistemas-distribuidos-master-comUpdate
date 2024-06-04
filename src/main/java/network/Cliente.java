@@ -99,7 +99,8 @@ public class Cliente {
             System.out.println("7. Vizualizar Competencias/Experiencia");
             System.out.println("8. Atualizar Competencias/Experiencia");
             System.out.println("9. Apagar Competencias/Experiencia");
-            System.out.println("10. Logout");
+            System.out.println("10. Filtrar Vagas");
+            System.out.println("11. Logout");
             System.out.print("Opção: ");
             String operationChoice = stdIn.readLine();
 
@@ -135,6 +136,9 @@ public class Cliente {
                     sendDeleteCompetenciaRequest(json, stdIn, out, in);
                     break;
                 case "10":
+                    sendFiltrarVagasRequest(json, stdIn, out);
+                    break;
+                case "11":
                     sendLogoutRequest(json, out);
                     break;
                 default:
@@ -362,6 +366,33 @@ public class Cliente {
         out.println(json.toString());
     }
 
+    private static void sendFiltrarVagasRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
+        if (currentToken == null) {
+            System.out.println("Você precisa fazer login primeiro.");
+        }
+        //lembrando que aqui só somente o candidato ve o resultado do friltro
+
+        json.put("operacao", "filtrarVagas");
+        json.put("token", currentToken);
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode filtrosNode = mapper.createObjectNode();
+        ArrayNode competenciasNode = filtrosNode.putArray("competencias");
+
+        System.out.println("Digite as competências para filtrar (separadas por vírgula):");
+        String competenciasInput = stdIn.readLine();
+        String[] competenciasArray = competenciasInput.split(",");
+        for (String competencia : competenciasArray) {
+            competenciasNode.add(competencia.trim());
+        }
+
+        System.out.println("Digite o tipo de filtro (AND/OR):");
+        String tipo = stdIn.readLine();
+        filtrosNode.put("tipo", tipo);
+
+        json.set("filtros", filtrosNode);
+        out.println(json.toString());
+    }
 
 
 

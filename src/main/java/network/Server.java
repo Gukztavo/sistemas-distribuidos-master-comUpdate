@@ -1,6 +1,8 @@
 package network;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import model.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -163,6 +165,9 @@ Server {
                         break;
                     case "listarVagas":
                         listarVagas(requestJson, responseNode, responseWriter);
+                        break;
+                    case "filtrarVagas":
+                        filtrarVagas(requestJson, responseNode, responseWriter);
                         break;
                     default:
                         responseNode.put("status", 400);
@@ -749,6 +754,64 @@ Server {
         }
         responseWriter.println(responseNode.toString());
     }
+    private static void filtrarVagas(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        String token = requestData.get("token").asText();
+        JsonNode filtrosNode = requestData.get("filtros");
+        ArrayNode competenciasNode = (ArrayNode) filtrosNode.get("competencias");
+        String tipo = filtrosNode.get("tipo").asText();
+
+        // Verificar se o token é válido
+        if (!emailToSessionMap.containsValue(token) && !emailToSessionMap.containsValue(token)) {
+            responseNode.put("status", 401);
+            responseNode.put("mensagem", "Token de autenticação inválido");
+            responseWriter.println(responseNode.toString());
+            return;
+        }
+
+        List<String> competencias = new ArrayList<>();
+        for (JsonNode competenciaNode : competenciasNode) {
+            competencias.add(competenciaNode.asText());
+        }
+
+        try (Session session = sessionFactory.openSession()) {
+            String queryStr = "SELECT DISTINCT v FROM Vaga v JOIN v.competencias c WHERE c IN :competencias";
+            if (tipo.equalsIgnoreCase("AND")) {
+                queryStr += " GROUP BY v.id HAVING COUNT(DISTINCT c) = :numCompetencias";
+            }
+            org.hibernate.query.Query<Vaga> query = session.createQuery(queryStr, Vaga.class);
+            query.setParameter("competencias", competencias);
+            if (tipo.equalsIgnoreCase("AND")) {
+                query.setParameter("numCompetencias", competencias.size());
+            }
+
+            List<Vaga> vagas = query.list();
+            ArrayNode vagasArray = responseNode.putArray("vagas");
+
+            for (Vaga vaga : vagas) {
+                ObjectNode vagaNode = vagasArray.addObject();
+                vagaNode.put("idVaga", vaga.getId());
+                vagaNode.put("nome", vaga.getNome());
+                vagaNode.put("faixaSalarial", vaga.getFaixaSalarial());
+                vagaNode.put("descricao", vaga.getDescricao());
+                vagaNode.put("estado", vaga.getEstado());
+                vagaNode.put("email", vaga.getEmpresa().getEmail());
+
+                ArrayNode competenciasArray = vagaNode.putArray("competencias");
+                for (String competencia : vaga.getCompetencias()) {
+                    competenciasArray.add(competencia);
+                }
+            }
+
+            responseNode.put("operacao", "filtrarVagas");
+            responseNode.put("status", 201);
+        } catch (Exception e) {
+            responseNode.put("status", 500);
+            responseNode.put("mensagem", "Erro ao filtrar vagas: " + e.getMessage());
+            e.printStackTrace();
+        }
+        responseWriter.println(responseNode.toString());
+    }
+
 
 
 
