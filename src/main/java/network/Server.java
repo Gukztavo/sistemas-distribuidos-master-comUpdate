@@ -550,6 +550,7 @@ Server {
             try {
                 session.save(vaga);
                 transaction.commit();
+                responseNode.put("operacao", "cadastrarVaga");
                 responseNode.put("status", 201);
                 responseNode.put("mensagem", "Vaga cadastrada com sucesso");
             } catch (Exception e) {
@@ -568,13 +569,13 @@ Server {
     }
 
     private static void visualizarVaga(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String emailEmpresa = requestData.get("email").asText();
+        String email = requestData.get("email").asText();
         Long idVaga = requestData.get("idVaga").asLong();
         String token = requestData.get("token").asText();
         Empresa empresa = sessionToUserMapEmp.get(token);
 
         // Verificar se o token é válido
-        if (!emailToSessionMapEmp.containsKey(emailEmpresa) || !emailToSessionMapEmp.get(emailEmpresa).equals(token)) {
+        if (!emailToSessionMapEmp.containsKey(email) || !emailToSessionMapEmp.get(email).equals(token)) {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "Token de autenticação inválido");
             responseWriter.println(responseNode.toString());
@@ -582,12 +583,12 @@ Server {
         }
 
         try (Session session = sessionFactory.openSession()) {
-            Vaga vaga = session.createQuery("FROM Vaga WHERE id = :idVaga AND empresa.email = :emailEmpresa", Vaga.class)
+            Vaga vaga = session.createQuery("FROM Vaga WHERE id = :idVaga AND empresa.email = :email", Vaga.class)
                     .setParameter("idVaga", idVaga)
-                    .setParameter("emailEmpresa", emailEmpresa)
+                    .setParameter("email", email)
                     .uniqueResult();
 
-            if (vaga == null) {
+            if (vaga == null) { //estorou esse erro
                 responseNode.put("status", 404);
                 responseNode.put("mensagem", "Vaga não encontrada ou não pertence à empresa");
                 responseWriter.println(responseNode.toString());
@@ -601,7 +602,7 @@ Server {
             responseNode.put("faixaSalarial", vaga.getFaixaSalarial());
             responseNode.put("descricao", vaga.getDescricao());
             responseNode.put("estado", vaga.getEstado());
-            responseNode.put("emailEmpresa", vaga.getEmpresa().getEmail());
+            responseNode.put("email", vaga.getEmpresa().getEmail());
 
             ArrayNode competenciasArray = responseNode.putArray("competencias");
             for (String competencia : vaga.getCompetencias()) {
@@ -617,7 +618,7 @@ Server {
     }
 
     private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String emailEmpresa = requestData.get("email").asText();
+        String email= requestData.get("email").asText();
         String token = requestData.get("token").asText();
         int idVaga = requestData.get("idVaga").asInt();
 
@@ -628,7 +629,7 @@ Server {
         ArrayNode competenciasArray = (ArrayNode) requestData.get("competencias");
 
         // Verificar se o token é válido
-        if (!emailToSessionMapEmp.containsKey(emailEmpresa) || !emailToSessionMapEmp.get(emailEmpresa).equals(token)) {
+        if (!emailToSessionMapEmp.containsKey(email) || !emailToSessionMapEmp.get(email).equals(token)) {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "Token de autenticação inválido");
             responseWriter.println(responseNode.toString());
@@ -638,9 +639,9 @@ Server {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
             try {
-                Vaga vaga = session.createQuery("FROM Vaga WHERE id = :idVaga AND empresa.email = :emailEmpresa", Vaga.class)
+                Vaga vaga = session.createQuery("FROM Vaga WHERE id = :idVaga AND empresa.email = :email", Vaga.class)
                         .setParameter("idVaga", idVaga)
-                        .setParameter("emailEmpresa", emailEmpresa)
+                        .setParameter("email", email)
                         .uniqueResult();
 
                 if (vaga == null) {
@@ -688,12 +689,12 @@ Server {
         responseWriter.println(responseNode.toString());
     }
     private static void apagarVaga(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String emailEmpresa = requestData.get("email").asText();
+        String email = requestData.get("email").asText();
         String token = requestData.get("token").asText();
         int idVaga = requestData.get("idVaga").asInt();
 
         // Verificar se o token é válido
-        if (!emailToSessionMapEmp.containsKey(emailEmpresa) || !emailToSessionMapEmp.get(emailEmpresa).equals(token)) {
+        if (!emailToSessionMapEmp.containsKey(email) || !emailToSessionMapEmp.get(email).equals(token)) {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "Token de autenticação inválido");
             responseWriter.println(responseNode.toString());
@@ -703,9 +704,9 @@ Server {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
             try {
-                Vaga vaga = session.createQuery("FROM Vaga v WHERE v.id = :idVaga AND v.empresa.email = :emailEmpresa", Vaga.class)
+                Vaga vaga = session.createQuery("FROM Vaga v WHERE v.id = :idVaga AND v.empresa.email = :email", Vaga.class)
                         .setParameter("idVaga", idVaga)
-                        .setParameter("emailEmpresa", emailEmpresa)
+                        .setParameter("email", email)
                         .uniqueResult();
 
                 if (vaga == null) {
@@ -1058,6 +1059,7 @@ Server {
 
                     transaction.commit();
                     responseNode.put("status", 201);
+                    responseNode.put("operacao", "cadastrarCompetenciaExperiencia");
                     responseNode.put("mensagem", "Competências cadastradas com sucesso");
                 } catch (Exception e) {
                     responseNode.put("status", 500);
@@ -1125,60 +1127,126 @@ Server {
         responseWriter.println(responseNode.toString());
     }
 
+//    private static void atualizarCompetenciaExperiencia(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+////        String email = requestData.get("email").asText();
+////        String token = requestData.get("token").asText();
+////
+////        if (emailToSessionMap.containsKey(email) && emailToSessionMap.get(email).equals(token)) {
+////            Pessoa user = sessionToUserMap.get(token);
+////
+////            if (user != null) {
+////                try (Session session = sessionFactory.openSession()) {
+////                    Transaction transaction = session.beginTransaction();
+////
+////                    ArrayNode competenciasArray = (ArrayNode) requestData.get("competenciaExperiencia");
+////                    for (JsonNode competenciaNode : competenciasArray) {
+////                        String competenciaAtual = competenciaNode.get("competenciaAtual").asText();
+////                        String novaCompetencia = competenciaNode.get("novaCompetencia").asText();
+////                        int experiencia = competenciaNode.get("experiencia").asInt();
+////
+////                        CompetenciaExperiencia competenciaExperiencia = session.createQuery("FROM CompetenciaExperiencia WHERE candidato.email = :email AND competencia = :competencia", CompetenciaExperiencia.class)
+////                                .setParameter("email", email)
+////                                .setParameter("competencia", competenciaAtual)
+////                                .uniqueResult();
+////
+////                        if (competenciaExperiencia != null) {
+////                            competenciaExperiencia.setCompetencia(novaCompetencia);
+////                            competenciaExperiencia.setExperiencia(experiencia);
+////                            session.update(competenciaExperiencia);
+////                        } else {
+////                            responseNode.put("status", 404);
+////                            responseNode.put("mensagem", "Competência não encontrada: " + competenciaAtual);
+////                            responseWriter.println(responseNode.toString());
+////                            transaction.rollback();
+////                            return;
+////                        }
+////                    }
+////
+////                    transaction.commit();
+////                    responseNode.put("status", 201);
+////                    responseNode.put("mensagem", "Competência/Experiencia atualizadas com sucesso");
+////                } catch (Exception e) {
+////                    responseNode.put("status", 500);
+////                    responseNode.put("mensagem", "Erro ao atualizar competências e experiências: " + e.getMessage());
+////                }
+////            } else {
+////                responseNode.put("status", 404);
+////                responseNode.put("mensagem", "Usuário não encontrado");
+////            }
+////        } else {
+////            responseNode.put("status", 401);
+////            responseNode.put("mensagem", "Token de autenticação inválido");
+////        }
+////
+////        responseWriter.println(responseNode.toString());
+////    }
+
     private static void atualizarCompetenciaExperiencia(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String email = requestData.get("email").asText();
-        String token = requestData.get("token").asText();
+        String email = requestData.path("email").asText(null);
+        String token = requestData.path("token").asText(null);
+        JsonNode competenciasExperiencias = requestData.path("competenciaExperiencia");
 
-        if (emailToSessionMap.containsKey(email) && emailToSessionMap.get(email).equals(token)) {
-            Pessoa user = sessionToUserMap.get(token);
+        if (email == null || token == null || !requestData.has("competenciaExperiencia") || competenciasExperiencias.isEmpty()) {
+            responseNode.put("status", 400);
+            responseNode.put("mensagem", "Dados incompletos ou incorretos.");
+            responseWriter.println(responseNode.toString());
+            return;
+        }
 
-            if (user != null) {
-                try (Session session = sessionFactory.openSession()) {
-                    Transaction transaction = session.beginTransaction();
-
-                    ArrayNode competenciasArray = (ArrayNode) requestData.get("competenciaExperiencia");
-                    for (JsonNode competenciaNode : competenciasArray) {
-                        String competenciaAtual = competenciaNode.get("competenciaAtual").asText();
-                        String novaCompetencia = competenciaNode.get("novaCompetencia").asText();
-                        int experiencia = competenciaNode.get("experiencia").asInt();
-
-                        CompetenciaExperiencia competenciaExperiencia = session.createQuery("FROM CompetenciaExperiencia WHERE candidato.email = :email AND competencia = :competencia", CompetenciaExperiencia.class)
-                                .setParameter("email", email)
-                                .setParameter("competencia", competenciaAtual)
-                                .uniqueResult();
-
-                        if (competenciaExperiencia != null) {
-                            competenciaExperiencia.setCompetencia(novaCompetencia);
-                            competenciaExperiencia.setExperiencia(experiencia);
-                            session.update(competenciaExperiencia);
-                        } else {
-                            responseNode.put("status", 404);
-                            responseNode.put("mensagem", "Competência não encontrada: " + competenciaAtual);
-                            responseWriter.println(responseNode.toString());
-                            transaction.rollback();
-                            return;
-                        }
-                    }
-
-                    transaction.commit();
-                    responseNode.put("status", 201);
-                    responseNode.put("mensagem", "Competência/Experiencia atualizadas com sucesso");
-                    System.out.println("to aqui ");
-                } catch (Exception e) {
-                    responseNode.put("status", 500);
-                    responseNode.put("mensagem", "Erro ao atualizar competências e experiências: " + e.getMessage());
-                }
-            } else {
-                responseNode.put("status", 404);
-                responseNode.put("mensagem", "Usuário não encontrado");
-            }
-        } else {
+        if (!emailToSessionMap.containsKey(email) || !emailToSessionMap.get(email).equals(token)) {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "Token de autenticação inválido");
+            responseWriter.println(responseNode.toString());
+            return;
+        }
+
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+            Pessoa candidato = session.createQuery("FROM pessoa WHERE email = :email", Pessoa.class)
+                    .setParameter("email", email)
+                    .uniqueResult();
+
+            if (candidato == null) {
+                responseNode.put("status", 404);
+                responseNode.put("mensagem", "Candidato não encontrado");
+                transaction.rollback();
+            } else {
+                for (JsonNode compExpNode : competenciasExperiencias) {
+                    String competencia = compExpNode.path("competencia").asText(null);
+                    int experiencia = compExpNode.path("experiencia").asInt(0); // Assume zero se inválido
+
+                    CompetenciaExperiencia ce = session.createQuery("FROM CompetenciaExperiencia WHERE competencia = :competencia AND candidato = :candidato", CompetenciaExperiencia.class)
+                            .setParameter("competencia", competencia)
+                            .setParameter("candidato", candidato)
+                            .uniqueResult();
+
+                    if (ce != null) {
+                        ce.setExperiencia(experiencia);
+                        session.saveOrUpdate(ce);
+                    } else {
+                        // Se decidir criar novas competências quando não encontradas
+                        ce = new CompetenciaExperiencia();
+                        ce.setCompetencia(competencia);
+                        ce.setExperiencia(experiencia);
+                        ce.setCandidato(candidato);
+                        session.save(ce);
+                    }
+                }
+                transaction.commit();
+                responseNode.put("status", 200);
+                responseNode.put("operacao", "atualizarCompetenciaExperiencia");
+                responseNode.put("mensagem", "Competências e experiências atualizadas com sucesso.");
+            }
+        } catch (Exception e) {
+            responseNode.put("status", 500);
+            responseNode.put("mensagem", "Erro ao atualizar competências e experiências: " + e.getMessage());
+            e.printStackTrace();
         }
 
         responseWriter.println(responseNode.toString());
     }
+
+
 
     private static void apagarCompetenciaExperiencia(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
         String email = requestData.get("email").asText();

@@ -151,14 +151,12 @@ public class Cliente {
             JsonNode responseNode = mapper.readTree(operationResponse);
 
             if (operationChoice.equals("2") && responseNode.path("status").asInt() == 200) {
-                if (responseNode.has("email") && responseNode.has("token")) {
-                    currentUserEmail = responseNode.get("email").asText();
+                if (responseNode.has("token")) {
                     currentToken = responseNode.get("token").asText();
                 } else {
                     System.out.println("Resposta do servidor não contém email ou token");
                 }
             } else if (operationChoice.equals("7")) {
-                currentUserEmail = null;
                 currentToken = null;
             }
         }
@@ -554,27 +552,32 @@ public class Cliente {
     private static void collectAndSendLoginDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);
         System.out.println("Digite o email:");
-        json.put("email", stdIn.readLine());
+        String emailSave =  stdIn.readLine();
+        json.put("email", emailSave);
         System.out.println("Digite a senha:");
         json.put("senha", stdIn.readLine());
+        currentUserEmail = emailSave;
         out.println(json.toString());
+        //tenho que armazenar o email e passar nas outras opções
+
     }
 
     private static void sendProfileRequest(ObjectNode json, PrintWriter out) {
-        if (currentUserEmail == null) {
+        if (currentToken == null) {
             System.out.println("Você precisa fazer login primeiro.");
-            return;
         }
         json.put("operacao", "visualizarCandidato");
+        json.put("token",currentToken);
         json.put("email", currentUserEmail);  // Inclui o email atual do usuário
+
         out.println(json.toString());
     }
 
 
     private static void sendEmpresaProfileRequest(ObjectNode json, PrintWriter out) {
-        if (currentEmpEmail == null) {
+        if (currentTokenEmp == null) {
             System.out.println("Você precisa fazer login primeiro.");
-            return;
+
         }
         json.put("operacao", "visualizarEmpresa");
         json.put("email", currentEmpEmail);

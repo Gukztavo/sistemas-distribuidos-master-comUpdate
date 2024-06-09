@@ -25,7 +25,7 @@ public class Vaga implements Serializable {
     private String estado;
 
     @ManyToOne
-    @JoinColumn(name = "emailEmpresa", referencedColumnName = "email")
+    @JoinColumn(name = "email", referencedColumnName = "email")
     private Empresa empresa;
 
     @ElementCollection
