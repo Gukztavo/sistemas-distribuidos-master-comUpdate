@@ -1048,7 +1048,7 @@ Server {
                             competenciaExperiencia.setExperiencia(experiencia);
                             competenciaExperiencia.setCandidato(user);
 
-                            session.save(competenciaExperiencia);
+                            session.save(competenciaExperiencia);session.save(competenciaExperiencia);
                         } else {
                             responseNode.put("status", 400);
                             responseNode.put("mensagem", "Competência inválida: " + competencia);
@@ -1103,7 +1103,11 @@ Server {
                 return;
             }else {
 
-            List<CompetenciaExperiencia> competenciasExperiencias = session.createQuery("FROM CompetenciaExperiencia WHERE candidato = :candidato", CompetenciaExperiencia.class)
+            List<CompetenciaExperiencia> competenciasExperiencias = session.createQuery("FROM CompetenciaExperiencia WHERE candidato = :candidato",
+                            CompetenciaExperiencia.class)
+                    // CompetenciaExperiencia competenciaExperiencia = session.createQuery("FROM CompetenciaExperiencia WHERE candidato.email = :email AND competencia = :competencia", CompetenciaExperiencia.class)
+
+
                     .setParameter("candidato", candidato)
                     .list();
 
@@ -1212,29 +1216,29 @@ Server {
                 transaction.rollback();
             } else {
                 for (JsonNode compExpNode : competenciasExperiencias) {
-                    String competencia = compExpNode.path("competencia").asText(null);
-                    int experiencia = compExpNode.path("experiencia").asInt(0); // Assume zero se inválido
+                    String competenciaAtual = compExpNode.path("competenciaAtual").asText(null);
+                    String novaCompetencia = compExpNode.path("novaCompetencia").asText(null);
+                    int experiencia = compExpNode.path("experiencia").asInt();
 
-                    CompetenciaExperiencia ce = session.createQuery("FROM CompetenciaExperiencia WHERE competencia = :competencia AND candidato = :candidato", CompetenciaExperiencia.class)
-                            .setParameter("competencia", competencia)
+                    CompetenciaExperiencia ce = session.createQuery("FROM CompetenciaExperiencia WHERE competencia = :competenciaAtual AND candidato = :candidato", CompetenciaExperiencia.class)
+                            .setParameter("competenciaAtual", competenciaAtual)
                             .setParameter("candidato", candidato)
                             .uniqueResult();
 
                     if (ce != null) {
+                        ce.setCompetencia(novaCompetencia); // atualiza o nome da competência
                         ce.setExperiencia(experiencia);
                         session.saveOrUpdate(ce);
                     } else {
-                        // Se decidir criar novas competências quando não encontradas
-                        ce = new CompetenciaExperiencia();
-                        ce.setCompetencia(competencia);
-                        ce.setExperiencia(experiencia);
-                        ce.setCandidato(candidato);
-                        session.save(ce);
+                        responseNode.put("mensagem", "Competência especificada não encontrada para atualização.");
+                        transaction.rollback();
+                        break;
                     }
                 }
                 transaction.commit();
                 responseNode.put("status", 200);
                 responseNode.put("operacao", "atualizarCompetenciaExperiencia");
+                responseNode.put("token",token);
                 responseNode.put("mensagem", "Competências e experiências atualizadas com sucesso.");
             }
         } catch (Exception e) {
@@ -1245,6 +1249,10 @@ Server {
 
         responseWriter.println(responseNode.toString());
     }
+
+
+
+
 
 
 

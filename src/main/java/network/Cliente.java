@@ -156,11 +156,12 @@ public class Cliente {
                 } else {
                     System.out.println("Resposta do servidor não contém email ou token");
                 }
-            } else if (operationChoice.equals("7")) {
+           } else if (operationChoice.equals("11")) {
                 currentToken = null;
             }
+            }
         }
-    }
+
 
     private static void operacoesEmpresa(BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -325,12 +326,12 @@ public class Cliente {
         json.put("faixaSalarial", novaFaixaSalarial);
         json.put("descricao", novaDescricao);
         json.put("estado", novoEstado);
-        json.put("token", currentTokenEmp);
 
         ArrayNode competenciasJsonArray = json.putArray("competencias");
         for (String competencia : competenciasArray) {
             competenciasJsonArray.add(competencia.trim());
         }
+        json.put("token",currentTokenEmp);
 
         out.println(json.toString());
     }
@@ -468,29 +469,53 @@ public class Cliente {
         List<String> competenciasFixas = CompetenciaService.getCompetenciasFixas();
         System.out.println("Escolha uma competência entre as opções: " + competenciasFixas);
 
-        System.out.println("Digite a competência atual:");
-        String competenciaAtual = stdIn.readLine();
-        while (!competenciasFixas.contains(competenciaAtual)) {
-            System.out.println("Competência inválida. Tente novamente:");
-            competenciaAtual = stdIn.readLine();
+        boolean continueAdding = true;
+        while (continueAdding) {
+            System.out.println("Digite a competência atual:");
+            String competenciaAtual = stdIn.readLine();
+
+            if (!competenciasFixas.contains(competenciaAtual)) {
+                System.out.println("Competência inválida. Tente novamente:");
+                continue;
+            }
+
+            System.out.println("Digite o novo nome da competência (ou pressione Enter para não alterar):");
+            String novaCompetencia = stdIn.readLine();
+            if (novaCompetencia.isEmpty()) {
+                novaCompetencia = competenciaAtual;  // Se vazio, mantém o nome atual
+            }
+
+            System.out.println("Digite os anos de experiência:");
+            int experiencia;
+            try {
+                experiencia = Integer.parseInt(stdIn.readLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida para experiência. Deve ser um número. Tente novamente.");
+                continue;
+            }
+
+            ObjectNode competenciaExperiencia = mapper.createObjectNode();
+            competenciaExperiencia.put("competenciaAtual", competenciaAtual);
+            competenciaExperiencia.put("novaCompetencia", novaCompetencia);
+            competenciaExperiencia.put("experiencia", experiencia);
+            competenciasExperiencias.add(competenciaExperiencia);
+
+            System.out.println("Deseja adicionar ou atualizar outra competência? (sim/não)");
+            String resposta = stdIn.readLine();
+            if (!resposta.equalsIgnoreCase("sim")) {
+                continueAdding = false;
+            }
         }
 
-        System.out.println("Digite o novo nome da competência:");
-        String novaCompetencia = stdIn.readLine();
-
-        System.out.println("Digite os anos de experiência:");
-        int experiencia = Integer.parseInt(stdIn.readLine());
-
-        ObjectNode competenciaExperiencia = mapper.createObjectNode();
-        competenciaExperiencia.put("competenciaAtual", competenciaAtual);
-        competenciaExperiencia.put("novaCompetencia", novaCompetencia);
-        competenciaExperiencia.put("experiencia", experiencia);
-
-        competenciasExperiencias.add(competenciaExperiencia);
         json.set("competenciaExperiencia", competenciasExperiencias);
-
         out.println(json.toString());
     }
+
+
+
+
+
+
     private static void sendDeleteCompetenciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
         if (currentUserEmail == null || currentToken == null) {
             System.out.println("Você precisa fazer login primeiro.");
@@ -504,6 +529,7 @@ public class Cliente {
         System.out.println("Digite a competência que deseja deletar:");
         String competencia = stdIn.readLine();
         json.put("competencia", competencia);
+
 
         out.println(json.toString());
 
@@ -580,6 +606,7 @@ public class Cliente {
 
         }
         json.put("operacao", "visualizarEmpresa");
+        json.put("token",currentTokenEmp);
         json.put("email", currentEmpEmail);
         //json.put("token", currentToken);
         out.println(json.toString());
@@ -588,7 +615,6 @@ public class Cliente {
     private static void sendLogoutRequest(ObjectNode json, PrintWriter out) {
         if (currentUserEmail == null && currentEmpEmail == null) {
             System.out.println("Você não está logado.");
-            return;
         }
         json.put("operacao", "logout");
         json.put("token", currentToken);
@@ -612,6 +638,7 @@ public class Cliente {
             return;
         }
         json.put("operacao", "apagarCandidato");
+        json.put("token",currentToken);
         json.put("email", emailToDelete);
         out.println(json.toString());
     }

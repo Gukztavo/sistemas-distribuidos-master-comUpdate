@@ -1,6 +1,7 @@
 package model;
 
 import jakarta.persistence.*;
+
 import java.io.Serializable;
 
 @Entity
@@ -21,12 +22,12 @@ public class CompetenciaExperiencia implements Serializable {
     private Pessoa candidato;
 
     // Getters e Setters
-    public Long getId() {
-        return id;
+    public void setId(String id) {
+        this.id = Long.valueOf(String.valueOf(Long.valueOf(id)));
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public Long getId() {
+        return id;
     }
 
     public String getCompetencia() {
