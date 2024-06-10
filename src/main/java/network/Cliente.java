@@ -236,7 +236,7 @@ public class Cliente {
                 } else {
                     System.out.println("Resposta do servidor não contém email ou token");
                 }
-            } else if (operationChoice.equals("6")) {
+            } else if (operationChoice.equals("11")) {
                 currentEmpEmail = null;
                 currentTokenEmp = null;
             }
@@ -297,7 +297,7 @@ public class Cliente {
     private static void sendUpdateVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         if (currentEmpEmail == null || currentTokenEmp == null) {
             System.out.println("Você precisa fazer login primeiro.");
-
+            return;
         }
 
         System.out.println("Digite o ID da vaga:");
@@ -323,18 +323,20 @@ public class Cliente {
         json.put("idVaga", idVaga);
         json.put("nome", novoNome);
         json.put("email", currentEmpEmail);
-        json.put("faixaSalarial", novaFaixaSalarial);
+        json.put("faixaSalarial", novaFaixaSalarial); // Corrigido para usar double
         json.put("descricao", novaDescricao);
         json.put("estado", novoEstado);
+        json.put("token", currentTokenEmp);
 
         ArrayNode competenciasJsonArray = json.putArray("competencias");
         for (String competencia : competenciasArray) {
             competenciasJsonArray.add(competencia.trim());
         }
-        json.put("token",currentTokenEmp);
 
         out.println(json.toString());
     }
+
+
 
     private static void sendDeleteVagaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         if (currentEmpEmail == null || currentTokenEmp == null) {
@@ -671,6 +673,7 @@ public class Cliente {
         json.put("email", currentUserEmail);
         json.put("nome", newName);
         json.put("senha", newSenha);
+        json.put("token",currentToken);
 
         out.println(json.toString());
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -705,6 +708,7 @@ public class Cliente {
         json.put("senha", newSenha);
         json.put("descricao", newDescricao);
         json.put("ramo", newRamo);
+        json.put("token",currentTokenEmp);
 
         out.println(json.toString());
     }

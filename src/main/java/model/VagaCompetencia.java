@@ -20,16 +20,17 @@ public class VagaCompetencia implements Serializable {
     private String competencia;
 
     // Getters and Setters
+
+    public Vaga getVaga() {
+        return vaga;
+    }
+
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Vaga getVaga() {
-        return vaga;
     }
 
     public void setVaga(Vaga vaga) {

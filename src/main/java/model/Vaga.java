@@ -32,7 +32,9 @@ public class Vaga implements Serializable {
     @CollectionTable(name = "vaga_competencia", joinColumns = @JoinColumn(name = "vaga_id"))
     @Column(name = "competencia")
     private List<String> competencias;
+
     // Getters and Setters
+
 
     public Long getId() {
         return id;
