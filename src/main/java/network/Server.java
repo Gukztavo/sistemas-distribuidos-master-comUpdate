@@ -395,7 +395,7 @@ Server {
 
                 if (user != null) {
                     responseNode.put("operacao", "visualizarCandidato");
-                    responseNode.put("status", 200);
+                    responseNode.put("status", 201);
                     responseNode.put("nome", user.getNome());
                     responseNode.put("senha", user.getSenha());
                 } else {
@@ -536,9 +536,11 @@ Server {
         for (JsonNode comp : requestData.get("competencias")) {
             competencias.add(comp.asText());
         }
-
+        Empresa empresaum = new Empresa();
+        empresaum.setEmail(email);
         Vaga vaga = new Vaga();
         vaga.setNome(nome);
+
         vaga.setFaixaSalarial(faixaSalarial);
         vaga.setDescricao(descricao);
         vaga.setEstado(estado);
@@ -818,18 +820,22 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
     }
 
     private static void listarVagas(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
+        String email = requestData.get("email").asText();
+
         try (Session session = sessionFactory.openSession()) {
-            List<Vaga> vagas = session.createQuery("FROM Vaga", Vaga.class).list();
+            List<Vaga> vagas = session.createQuery("SELECT DISTINCT v FROM Vaga v WHERE v.empresa.email = :email", Vaga.class)
+                    .setParameter("email", email)
+                    .list();
 
             ArrayNode vagasArray = responseNode.putArray("vagas");
             for (Vaga vaga : vagas) {
                 ObjectNode vagaNode = vagasArray.addObject();
-                vagaNode.put("nomeVaga", vaga.getNome());
+                vagaNode.put("nome", vaga.getNome());
                 vagaNode.put("idVaga", vaga.getId());
             }
 
             responseNode.put("operacao", "listarVagas");
-            responseNode.put("status", 200);
+            responseNode.put("status", 201);
         } catch (Exception e) {
             responseNode.put("status", 500);
             responseNode.put("mensagem", "Erro ao listar vagas: " + e.getMessage());
@@ -837,6 +843,7 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
         }
         responseWriter.println(responseNode.toString());
     }
+
     private static void filtrarVagas(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
         String token = requestData.get("token").asText();
         JsonNode filtrosNode = requestData.get("filtros");
@@ -1271,7 +1278,7 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
                     }
                 }
                 transaction.commit();
-                responseNode.put("status", 200);
+                responseNode.put("status", 201);
                 responseNode.put("operacao", "atualizarCompetenciaExperiencia");
                 responseNode.put("token",token);
                 responseNode.put("mensagem", "Competências e experiências atualizadas com sucesso.");
@@ -1292,11 +1299,17 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
 
 
     private static void apagarCompetenciaExperiencia(JsonNode requestData, ObjectNode responseNode, PrintWriter responseWriter) {
-        String email = requestData.get("email").asText();
-        String token = requestData.get("token").asText();
-        String competencia = requestData.get("competencia").asText();
+        String email = requestData.path("email").asText(null);
+        String token = requestData.path("token").asText(null);
+        String competencia = requestData.path("competencia").asText(null);
 
-        // Verificar se o token é válido
+//        if (email == null || token == null || competencia == null) {
+//            responseNode.put("status", 400);
+//            responseNode.put("mensagem", "Dados incompletos ou incorretos.");
+//            responseWriter.println(responseNode.toString());
+//            return;
+//        }
+
         if (!emailToSessionMap.containsKey(email) || !emailToSessionMap.get(email).equals(token)) {
             responseNode.put("status", 401);
             responseNode.put("mensagem", "Token de autenticação inválido");
@@ -1305,7 +1318,7 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
         }
 
         try (Session session = sessionFactory.openSession()) {
-            Pessoa candidato = session.createQuery("FROM pessoa WHERE email = :email", Pessoa.class)
+            Pessoa candidato = session.createQuery("FROM Pessoa WHERE email = :email", Pessoa.class)
                     .setParameter("email", email)
                     .uniqueResult();
 
@@ -1331,10 +1344,9 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
             Transaction transaction = session.beginTransaction();
             session.delete(competenciaExperiencia);
             transaction.commit();
-            //json de respostas
-            responseNode.put("status", 200);
+
+            responseNode.put("status", 201);
             responseNode.put("operacao", "apagarCompetenciaExperiencia");
-            responseNode.put("token",token);
             responseNode.put("mensagem", "Competência deletada com sucesso");
 
         } catch (Exception e) {
@@ -1345,6 +1357,7 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
 
         responseWriter.println(responseNode.toString());
     }
+
 
     private static int createEmpresa(String razaoSocial, String email, String cnpj, String senha, String descricao, String ramo) {
         Empresa empresa = new Empresa(razaoSocial,email,cnpj,senha,descricao,ramo);

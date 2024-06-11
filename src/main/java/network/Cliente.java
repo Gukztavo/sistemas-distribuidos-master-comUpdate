@@ -217,7 +217,7 @@ public class Cliente {
                     sendListarVagasRequest(json, stdIn, out);
                     break;
                 case "11":
-                    sendLogoutRequest(json, out);
+                    sendLogoutEmpRequest(json, out);
                     break;
 
 
@@ -421,25 +421,35 @@ public class Cliente {
         List<String> competenciasFixas = CompetenciaService.getCompetenciasFixas();
         System.out.println("Escolha uma competência entre as opções: " + competenciasFixas);
 
-        System.out.println("Digite a competência:");
-        String competencia = stdIn.readLine();
-        if (!competenciasFixas.contains(competencia)) {
-            System.out.println("Competência inválida. Tente novamente.");
-            return;
+        while (true) {
+            System.out.println("Digite a competência (ou 'sair' para finalizar):");
+            String competencia = stdIn.readLine();
+            if (competencia.equalsIgnoreCase("sair")) {
+                break;
+            }
+
+            if (!competenciasFixas.contains(competencia)) {
+                System.out.println("Competência inválida. Tente novamente.");
+                continue;
+            }
+
+            System.out.println("Digite os anos de experiência:");
+            int experiencia = Integer.parseInt(stdIn.readLine());
+
+            ObjectNode competenciaExperiencia = mapper.createObjectNode();
+            competenciaExperiencia.put("competencia", competencia);
+            competenciaExperiencia.put("experiencia", experiencia);
+
+            competenciasExperiencias.add(competenciaExperiencia);
         }
-
-        System.out.println("Digite os anos de experiência:");
-        int experiencia = Integer.parseInt(stdIn.readLine());
-
-        ObjectNode competenciaExperiencia = mapper.createObjectNode();
-        competenciaExperiencia.put("competencia", competencia);
-        competenciaExperiencia.put("experiencia", experiencia);
-
-        competenciasExperiencias.add(competenciaExperiencia);
 
         json.set("competenciaExperiencia", competenciasExperiencias);
         out.println(json.toString());
     }
+
+
+
+
 
 
     private static void sendVisualizarCompetenciaExperienciaRequest(ObjectNode json, PrintWriter out) {
@@ -481,12 +491,6 @@ public class Cliente {
                 continue;
             }
 
-            System.out.println("Digite o novo nome da competência (ou pressione Enter para não alterar):");
-            String novaCompetencia = stdIn.readLine();
-            if (novaCompetencia.isEmpty()) {
-                novaCompetencia = competenciaAtual;  // Se vazio, mantém o nome atual
-            }
-
             System.out.println("Digite os anos de experiência:");
             int experiencia;
             try {
@@ -497,8 +501,7 @@ public class Cliente {
             }
 
             ObjectNode competenciaExperiencia = mapper.createObjectNode();
-            competenciaExperiencia.put("competenciaAtual", competenciaAtual);
-            competenciaExperiencia.put("novaCompetencia", novaCompetencia);
+            competenciaExperiencia.put("competencia", competenciaAtual);
             competenciaExperiencia.put("experiencia", experiencia);
             competenciasExperiencias.add(competenciaExperiencia);
 
@@ -518,6 +521,7 @@ public class Cliente {
 
 
 
+
     private static void sendDeleteCompetenciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
         if (currentUserEmail == null || currentToken == null) {
             System.out.println("Você precisa fazer login primeiro.");
@@ -530,7 +534,11 @@ public class Cliente {
 
         System.out.println("Digite a competência que deseja deletar:");
         String competencia = stdIn.readLine();
+        System.out.println("Digite a experiencia");
+        String experiencia = stdIn.readLine();
         json.put("competencia", competencia);
+        json.put("experiencia", experiencia);
+        // montar array list com isso e mandar o array no json
 
 
         out.println(json.toString());
@@ -625,7 +633,6 @@ public class Cliente {
     private static void sendLogoutEmpRequest(ObjectNode json, PrintWriter out) {
         if (currentEmpEmail == null) {
             System.out.println("Você não está logado.");
-            return;
         }
         json.put("operacao", "logout");
         json.put("token", currentTokenEmp);

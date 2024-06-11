@@ -12,6 +12,17 @@ public class Vaga implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+//    @Column(name = "email")
+//    private String email;
+//
+//    public String getEmail() {
+//        return email;
+//    }
+//
+//    public void setEmail(String email) {
+//        this.email = email;
+//    }
+
     @Column(name = "nome")
     private String nome;
 
