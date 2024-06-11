@@ -109,7 +109,7 @@ public class Cliente {
 
             switch (operationChoice) {
                 case "1":
-                    collectAndSendCandidateDetails(json, "cadastrarCandidato", stdIn, out);
+                    collectAndSendCandidateDetails(json, "cadastrarCandidato", stdIn, out,in);
                     break;
                 case "2":
                     collectAndSendLoginDetails(json, "loginCandidato", stdIn, out);
@@ -133,7 +133,7 @@ public class Cliente {
                     sendUpdateCompetenciaExperienciaRequest(json, stdIn, out);
                     break;
                 case "9":
-                    sendDeleteCompetenciaRequest(json, stdIn, out, in);
+                    sendDeleteCompetenciaRequest(json, stdIn, out);
                     break;
                 case "10":
                     sendFiltrarVagasRequest(json, stdIn, out);
@@ -187,7 +187,7 @@ public class Cliente {
 
             switch (operationChoice) {
                 case "1":
-                    collectAndSendEmpresaDetails(json, "cadastrarEmpresa", stdIn, out);
+                    collectAndSendEmpresaDetails(json, "cadastrarEmpresa", stdIn, out,in);
                     break;
                 case "2":
                     collectAndSendLoginEmpresa(json, "loginEmpresa", stdIn, out);
@@ -483,7 +483,7 @@ public class Cliente {
 
         boolean continueAdding = true;
         while (continueAdding) {
-            System.out.println("Digite a competência atual:");
+            System.out.println("Digite a competência:");
             String competenciaAtual = stdIn.readLine();
 
             if (!competenciasFixas.contains(competenciaAtual)) {
@@ -491,7 +491,7 @@ public class Cliente {
                 continue;
             }
 
-            System.out.println("Digite os anos de experiência:");
+            System.out.println("Digite os anos de experiência a serem atualizados:");
             int experiencia;
             try {
                 experiencia = Integer.parseInt(stdIn.readLine());
@@ -522,7 +522,7 @@ public class Cliente {
 
 
 
-    private static void sendDeleteCompetenciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
+    private static void sendDeleteCompetenciaRequest(ObjectNode json, BufferedReader stdIn, PrintWriter out) throws IOException {
         if (currentUserEmail == null || currentToken == null) {
             System.out.println("Você precisa fazer login primeiro.");
             return;
@@ -532,21 +532,43 @@ public class Cliente {
         json.put("email", currentUserEmail);
         json.put("token", currentToken);
 
-        System.out.println("Digite a competência que deseja deletar:");
-        String competencia = stdIn.readLine();
-        System.out.println("Digite a experiencia");
-        String experiencia = stdIn.readLine();
-        json.put("competencia", competencia);
-        json.put("experiencia", experiencia);
-        // montar array list com isso e mandar o array no json
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode competenciasExperiencias = mapper.createArrayNode();
 
+        boolean continueAdding = true;
+        while (continueAdding) {
+            System.out.println("Digite a competência a ser deletada:");
+            String competencia = stdIn.readLine();
 
+            System.out.println("Digite os anos de experiência para a competência " + competencia + ":");
+            int experiencia;
+            try {
+                experiencia = Integer.parseInt(stdIn.readLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida para experiência. Deve ser um número. Tente novamente.");
+                continue;
+            }
+
+            ObjectNode competenciaExperiencia = mapper.createObjectNode();
+            competenciaExperiencia.put("competencia", competencia.trim());
+            competenciaExperiencia.put("experiencia", experiencia);
+
+            competenciasExperiencias.add(competenciaExperiencia);
+
+            System.out.println("Deseja adicionar outra competência para deletar? (sim/não)");
+            String resposta = stdIn.readLine();
+            if (!resposta.equalsIgnoreCase("sim")) {
+                continueAdding = false;
+            }
+        }
+
+        json.set("competenciaExperiencia", competenciasExperiencias);
         out.println(json.toString());
-
-
     }
 
-    private static void collectAndSendEmpresaDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
+
+
+    private static void collectAndSendEmpresaDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out,BufferedReader in) throws IOException {
         json.put("operacao", operation);
         System.out.println("Digite a razaoSocial da empresa:");
         json.put("razaoSocial", stdIn.readLine());
@@ -561,9 +583,20 @@ public class Cliente {
         System.out.println("Digite o ramo da empresa :");
         json.put("ramo", stdIn.readLine());
         out.println(json.toString());
+
+        String response = in.readLine();
+        System.out.println("Resposta do servidor: " + response);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.readTree(response);
+
+        if (responseNode.path("status").asInt() == 201 && responseNode.has("token")) {
+            currentTokenEmp = responseNode.get("token").asText();
+            currentEmpEmail = json.get("email").asText();
+        }
+        operacoesEmpresa(stdIn, out, in);
     }
 
-    private static void collectAndSendCandidateDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
+    private static void collectAndSendCandidateDetails(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out, BufferedReader in) throws IOException {
         json.put("operacao", operation);
         System.out.println("Digite o nome do candidato:");
         json.put("nome", stdIn.readLine());
@@ -572,7 +605,20 @@ public class Cliente {
         System.out.println("Digite a senha do candidato:");
         json.put("senha", stdIn.readLine());
         out.println(json.toString());
+
+        // Lê a resposta do servidor
+        String response = in.readLine();
+        System.out.println("Resposta do servidor: " + response);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.readTree(response);
+
+        if (responseNode.path("status").asInt() == 201 && responseNode.has("token")) {
+            currentToken = responseNode.get("token").asText();
+            currentUserEmail = json.get("email").asText();
+        }
+        handleUserOperations(stdIn, out, in);
     }
+
 
     private static void collectAndSendLoginEmpresa(ObjectNode json, String operation, BufferedReader stdIn, PrintWriter out) throws IOException {
         json.put("operacao", operation);
@@ -590,9 +636,10 @@ public class Cliente {
         System.out.println("Digite o email:");
         String emailSave =  stdIn.readLine();
         json.put("email", emailSave);
+        currentUserEmail = emailSave;
         System.out.println("Digite a senha:");
         json.put("senha", stdIn.readLine());
-        currentUserEmail = emailSave;
+
         out.println(json.toString());
         //tenho que armazenar o email e passar nas outras opções
 

@@ -1,4 +1,3 @@
-
 package network;
 
 import org.hibernate.SessionFactory;
