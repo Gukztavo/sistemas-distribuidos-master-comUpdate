@@ -1,24 +1,6 @@
 Para rodar o projeto vai precisar criar um banco de dados Mysql, com nome "sistemas_distribuidos", ip: localhost, porta 3306. Conforme a linha abaixo
 <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/sistemas_distribuidos</property>
-o banco deve conter uma tabela chamada "pessoa", com (TIPO, TAMANHO):
-id(char, 36 caracteres, chave primaria)*Usar autoIncrement, 
-nome (varchar, 50), 
-senha(INT , 6),
-email (varchar, 50). 
-
-agora crie tabela empresa
-id(char, 36 caracteres, chave primaria)*Usar autoIncrement,
-cnpj VARCHAR 14
-email VARCHAR 50 
-senha VARCHAR 50 
-descricao VARCHAR 100
-ramo VARCHAR 100 
-razaoSocial VARCHAR  50
-
-
-                                                                                                                                  
-
-
+o banco de dados deve ser criado de acordo com o arquivo (bancodedados.sql), que está na pasta do projeto
 
 Para rodar o codigo, será nescessario carregar as configs da Maeven, o local da maeven pode variar de ID. No Intellij ela fica localizada no canto superior direto. 
 Deve clicar no icone da Maeven (M) e clicar na opção "reload all maeven projects".  
