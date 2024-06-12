@@ -1114,9 +1114,10 @@ private static void atualizarVaga(JsonNode requestData, ObjectNode responseNode,
         return pattern.matcher(email).matches() && email.length() >= 7 && email.length() <= 50;
     }
 
-    private static boolean isValidPassword(String password) {
-        return password.matches("\\d+") && password.length() >= 3 && password.length() <= 8;
+   private boolean isValidPassword(String password) {
+    return password.matches("[a-zA-Z0-9@#_]+") && password.length() >= 6 && password.length() <= 20;
     }
+
 
     private static boolean isValidCNPJ(String cnpj) {
 
